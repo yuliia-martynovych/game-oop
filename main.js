@@ -1,7 +1,7 @@
 //Clases
 
-class Game {
-    costructor() {
+class Game { 
+    constructor() {
         this.container = document.getElementById("game-container");
         this.personaje = null;
         this.monedas = [];
@@ -12,7 +12,7 @@ class Game {
     crearEscenario() {
         this.personaje = new Personaje();
         this.container.appendChild(this.personaje.element);
-        for (let i = 0; i < 5; i++){
+        for (let i = 0; i < 20; i++){
             const moneda = new Moneda();
             this.monedas.push(moneda);
             this.container.appendChild(moneda.element);
@@ -31,19 +31,20 @@ class Game {
                 }
             })
         },
-        100)
+            100);
     }
 }
 class Personaje {
     constructor() {
         this.x = 50;
         this.y = 300;
-        this.width = 50;
-        this.height = 50;
+        this.width = 100;
+        this.height = 100;
         this.velocidad = 10;
         this.saltando = false;
         this.element = document.createElement("div");
-        this.element.classList.add("personaje")
+        this.element.classList.add("personaje");
+        this.actualizarPosicion();
     }
     mover(evento) {
         if (evento.key === "ArrowRight") {
@@ -67,7 +68,7 @@ class Personaje {
             }
             this.actualizarPosicion()
         },
-            20)
+            20);
     }
     caer() {
         const gravedad = setInterval(() => {
@@ -79,7 +80,7 @@ class Personaje {
             this.actualizarPosicion();
         },
 
-        20)
+            20);
     }
     actualizarPosicion() {
         this.element.style.left = `${this.x}px`;
