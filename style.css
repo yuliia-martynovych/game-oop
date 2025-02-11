@@ -39,8 +39,10 @@ body {
     position: absolute;
     width: 30px;
     height: 30px;
-    background-color: gold;
+    background-image: url('./images/star.png');
+    background-size: cover;
+    background-position: center;
     border-radius: 50%;
-    box-shadow: 0 0 10px 2px rgba(255, 223, 0, 0.8);
 }
+
 
