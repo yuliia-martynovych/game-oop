@@ -3,7 +3,7 @@ body {
     font-family: Arial, sans-serif;
     overflow: hidden;
     background-color: #282727;
-    background-image: url('./sky.jpg');
+    background-image: url('./images/sky.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -30,7 +30,7 @@ body {
     position: absolute;
     width: 100px;
     height: 100px;
-    background-image: url('./cat.png');
+    background-image: url('./images/cat.png');
     background-size: cover;
     position: absolute;
 }
