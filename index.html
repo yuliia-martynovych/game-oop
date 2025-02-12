@@ -8,25 +8,32 @@
     <link rel="stylesheet" href="style.css" />
     <link rel="icon" href="./images/favicon.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poiret+One&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <h1>Recoge todas las estrellas!</h1>
+    <h1>Collect all the stars!✨</h1>
+    <div id="game-info">
     <div id="score-container">
-        <div id="score">Estrellas: 0</div>
+        <div id="score">Stars: 0</div>
     </div>
     <div id="music-toggle">
-        <button id="music-toggle-btn" class="inactive">🔕</button>
+        <button id="music-toggle-btn" class="inactive">Music:OFF</button>
     </div>
-
+</div>
     <div id="game-container"></div>
     <div id="win-overlay" class="overlay">
         <div class="win-message">
-            <h2>Felicidades!</h2>
-            <button id="restart-btn">¡Jugar otra vez!</button>
+            <h2>Congratulations!</h2>
+            <button id="restart-btn">Play again</button>
         </div>
     </div>
-
+<div id="game-controls">
+    <button class="control-btn" id="left-btn">←</button>
+    <button class="control-btn" id="up-btn">↑</button>
+    <button class="control-btn" id="right-btn">→</button>
+    <button class="control-btn" id="space-btn">␣</button>
+</div>
     <script type="module" src="./main.js"></script>
 </body>
 

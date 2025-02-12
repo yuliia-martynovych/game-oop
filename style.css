@@ -21,7 +21,25 @@ body {
     background-color: #b662ea;
     padding: 10px;
     border-radius: 5px;
+    font-family: 'Poiret';
 
+}
+#game-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 20px;
+    margin-top: 50px;
+    gap: 50px;
+    
+}
+
+#score-container {
+    flex: 1;
+}
+
+#music-toggle {
+    flex-shrink: 0;
 }
 
 #game-container {
@@ -30,8 +48,8 @@ body {
     height: 400px;
     margin: 20px auto;
     border: 10px solid;
-    border-image: radial-gradient(circle, #e4c5e4d5, #0808086d) 1;
-    background-image: url('./images/bg1.png');
+    border-image: radial-gradient(circle, #711171d5, #630d726d) 1;
+    background-image: url('./images/bg.png');
     background-size: cover;
     background-position: center;
     overflow: hidden;
@@ -41,7 +59,7 @@ body {
 .personaje {
     position: absolute;
     width: 100px;
-    height: 100px;
+    height: 70px;
     background-image: url('./images/red-cat.png');
     background-size: cover;
     position: absolute;
@@ -74,18 +92,16 @@ body {
 
 /*Sound button*/
 #music-toggle-btn {
-    font-size: 24px;
+    font-size: 18px;
     background: none;
     border: none;
     cursor: pointer;
-}
-
-.inactive {
-    color: gray;
+    font-family: 'Poiret';
+    color: #fff;
 }
 
 #music-toggle-btn:hover {
-    color: #f39c12;
+    color: #b662ea;
 }
 
 /********Win*******/
@@ -100,6 +116,7 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    
 }
 
 .win-message {
@@ -114,6 +131,7 @@ body {
 .win-message h2 {
     margin-bottom: 20px;
     color: #8f16cc;
+    font-size: 24px;
 }
 
 #restart-btn {
@@ -123,9 +141,39 @@ body {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-family: 'Poiret';
+    font-size: 18px;
 }
 
 #restart-btn:hover {
     background-color: #4a0e67;
+}
+
+/*Game Control Buttons*/
+#game-controls {
+    position: absolute;
+    bottom: 20px;    
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 10;     
+}
+
+.control-btn {
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  background-color: #30153e;
+  color: rgb(255, 252, 252);
+  border: solid 1px;
+  border-color: #b662ea;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.control-btn:active {
+  background-color: #495057;
 }

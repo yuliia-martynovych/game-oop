@@ -14,7 +14,7 @@ class Game {
         this.celebrationSound = new Audio('./sounds/fanfare.mp3');
         this.celebrationSound.volume = 0.2;
 
-        this.backgroundMusic = new Audio('./sounds/background-music.mp3');
+        this.backgroundMusic = new Audio('./sounds/background-music-mini.mp3');
         this.backgroundMusic.loop = true; 
         this.backgroundMusic.volume = 0.2; 
         this.backgroundMusic.play()
@@ -31,11 +31,11 @@ class Game {
     toggleMusic() {
         if (this.backgroundMusic.paused) {
             this.backgroundMusic.play();
-            this.musicToggleBtn.textContent = "🔔";
+            this.musicToggleBtn.textContent = "Music:ON";
             this.musicToggleBtn.classList.remove("inactive");
         } else {
             this.backgroundMusic.pause();
-            this.musicToggleBtn.textContent = "🔕"; 
+            this.musicToggleBtn.textContent = "Music:OFF"; 
             this.musicToggleBtn.classList.add("inactive");
         }
     }
@@ -193,3 +193,23 @@ class Moneda {
     }
 }
 const juego = new Game();
+
+document.getElementById('left-btn').addEventListener('click', () => {
+  const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
+  window.dispatchEvent(event);
+});
+
+document.getElementById('up-btn').addEventListener('click', () => {
+  const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
+  window.dispatchEvent(event);
+});
+
+document.getElementById('right-btn').addEventListener('click', () => {
+  const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+  window.dispatchEvent(event);
+});
+
+document.getElementById('space-btn').addEventListener('click', () => {
+  const event = new KeyboardEvent('keydown', { key: ' ' }); // Пробел
+  window.dispatchEvent(event);
+});
