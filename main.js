@@ -13,9 +13,33 @@ class Game {
         this.restartBtn = document.getElementById("restart-btn");
         this.celebrationSound = new Audio('./sounds/fanfare.mp3');
         this.celebrationSound.volume = 0.2;
+
+        this.backgroundMusic = new Audio('./sounds/background-music.mp3');
+        this.backgroundMusic.loop = true; 
+        this.backgroundMusic.volume = 0.2; 
+        this.backgroundMusic.play()
+
+        // Background music button
+        this.musicToggleBtn = document.getElementById("music-toggle-btn");
+        this.musicToggleBtn.addEventListener("click", () => this.toggleMusic());
+
+
+
         this.restartBtn.addEventListener("click", () => this.reiniciarJuego());
         
     } 
+    toggleMusic() {
+        if (this.backgroundMusic.paused) {
+            this.backgroundMusic.play();
+            this.musicToggleBtn.textContent = "🔔";
+            this.musicToggleBtn.classList.remove("inactive");
+        } else {
+            this.backgroundMusic.pause();
+            this.musicToggleBtn.textContent = "🔕"; 
+            this.musicToggleBtn.classList.add("inactive");
+        }
+    }
+
     crearEscenario() {    
         this.personaje = new Personaje();
         this.container.appendChild(this.personaje.element);
@@ -98,7 +122,7 @@ class Personaje {
     }
     saltar() {
         this.saltando = true;
-        let alturaMaxima = this.y - 100;
+        let alturaMaxima = this.y - 150;
         const salto = setInterval(() => {
             if (this.y > alturaMaxima) {
                 this.y -= 10; //redondeo de la gravedad
@@ -110,6 +134,7 @@ class Personaje {
         },
             20);
     }
+
     saltarAlto() {
         this.saltando = true;
         let alturaMaxima = this.y - 250;

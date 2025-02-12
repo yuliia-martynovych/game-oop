@@ -72,6 +72,22 @@ body {
     }
 }
 
+/*Sound button*/
+#music-toggle-btn {
+    font-size: 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.inactive {
+    color: gray;
+}
+
+#music-toggle-btn:hover {
+    color: #f39c12;
+}
+
 /********Win*******/
 .overlay {
     position: fixed;
