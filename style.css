@@ -2,11 +2,7 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     overflow: hidden;
-    background-color: #282727;
-    background-image: url('./images/sky.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background-color: #141414;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -94,23 +90,26 @@ body {
     background-color: #fff;
     padding: 20px;
     border-radius: 10px;
+    padding-left: 70px;
+    padding-right: 70px;
     text-align: center;
 }
 
 .win-message h2 {
     margin-bottom: 20px;
-    color: #4caf50;
+    color: #8f16cc;
 }
 
 #restart-btn {
-    background-color: #4caf50;
+    background-color: #8f16cc;
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 }
 
 #restart-btn:hover {
-    background-color: #45a049;
+    background-color: #4a0e67;
 }

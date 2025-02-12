@@ -11,6 +11,8 @@ class Game {
         this.agregarEventos();
         this.overlay = document.getElementById("win-overlay");
         this.restartBtn = document.getElementById("restart-btn");
+        this.celebrationSound = new Audio('./sounds/fanfare.mp3');
+        this.celebrationSound.volume = 0.2;
         this.restartBtn.addEventListener("click", () => this.reiniciarJuego());
         
     } 
@@ -46,6 +48,7 @@ class Game {
             100);
     }
     mostrarVentanaGanadora() {
+        this.celebrationSound.play();
         this.overlay.style.display = 'flex';
     }
 
@@ -75,18 +78,27 @@ class Personaje {
         this.actualizarPosicion();
     }
     mover(evento) {
+        const containerWidth = document.getElementById("game-container").offsetWidth;
+        const containerHeight = document.getElementById("game-container").offsetHeight;
+
         if (evento.key === "ArrowRight") {
-            this.x += this.velocidad;
+            if (this.x + this.width < containerWidth) {
+                this.x += this.velocidad;
+            }
         } else if (evento.key === "ArrowLeft") {
-            this.x -= this.velocidad;
+            if (this.x > 0) {
+                this.x -= this.velocidad;
+            }
         } else if (evento.key === "ArrowUp" && !this.saltando) {
             this.saltar();
-        } 
+        } else if (evento.key === " " && !this.saltando) {
+            this.saltarAlto();
+        }
         this.actualizarPosicion();
     }
     saltar() {
         this.saltando = true;
-        let alturaMaxima = this.y - 250;
+        let alturaMaxima = this.y - 100;
         const salto = setInterval(() => {
             if (this.y > alturaMaxima) {
                 this.y -= 10; //redondeo de la gravedad
@@ -98,6 +110,20 @@ class Personaje {
         },
             20);
     }
+    saltarAlto() {
+        this.saltando = true;
+        let alturaMaxima = this.y - 250;
+        const saltoAlto = setInterval(() => {
+            if (this.y > alturaMaxima) {
+                this.y -= 10; 
+            } else {
+                clearInterval(saltoAlto);
+                this.caer();
+            }
+            this.actualizarPosicion()
+        }, 20);
+    }
+
     caer() {
         const gravedad = setInterval(() => {
             if (this.y < 300) {
