@@ -3,13 +3,14 @@
 class Game { 
     constructor() {
         this.container = document.getElementById("game-container");
+        this.scoreElement = document.getElementById("score");
         this.personaje = null;
         this.monedas = [];
         this.puntuacion = 0;
         this.crearEscenario();
         this.agregarEventos();
     } 
-    crearEscenario() {
+    crearEscenario() {    
         this.personaje = new Personaje();
         this.container.appendChild(this.personaje.element);
         for (let i = 0; i < 20; i++){
@@ -28,6 +29,9 @@ class Game {
                 if (this.personaje.colisionaCon(moneda)) {
                     this.container.removeChild(moneda.element);
                     this.monedas.splice(index, 1);
+
+                    this.puntuacion++;
+                    this.scoreElement.innerText = `Estrellas: ${this.puntuacion}`;
                 }
             })
         },
@@ -51,14 +55,14 @@ class Personaje {
             this.x += this.velocidad;
         } else if (evento.key === "ArrowLeft") {
             this.x -= this.velocidad;
-        } else if (evento.key === "ArrowUp") {
+        } else if (evento.key === "ArrowUp" && !this.saltando) {
             this.saltar();
         } 
         this.actualizarPosicion();
     }
     saltar() {
         this.saltando = true;
-        let alturaMaxima = this.y - 100;
+        let alturaMaxima = this.y - 250;
         const salto = setInterval(() => {
             if (this.y > alturaMaxima) {
                 this.y -= 10; //redondeo de la gravedad
@@ -76,6 +80,7 @@ class Personaje {
                 this.y += 10;
             } else {
                 clearInterval(gravedad);
+                this.saltando = false;
             }
             this.actualizarPosicion();
         },
