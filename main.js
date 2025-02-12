@@ -62,7 +62,7 @@ class Game {
     
                     moneda.coinSound.play();
                     this.puntuacion++;
-                    this.scoreElement.innerText = `Estrellas: ${this.puntuacion}`;
+                    this.scoreElement.innerText = `Stars: ${this.puntuacion}/20`;
                     if (this.monedas.length === 0) {
                         this.mostrarVentanaGanadora();
                     }

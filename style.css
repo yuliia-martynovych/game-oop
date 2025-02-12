@@ -47,8 +47,7 @@ body {
     width: 800px;
     height: 400px;
     margin: 20px auto;
-    border: 10px solid;
-    border-image: radial-gradient(circle, #711171d5, #630d726d) 1;
+    border: 3px solid;
     background-image: url('./images/bg.png');
     background-size: cover;
     background-position: center;
