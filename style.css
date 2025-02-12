@@ -13,7 +13,7 @@ body {
     height: 100vh;
     flex-direction: column;
     color: #fff;
-    font-family: 'Pixelify Sans', sans-serif;
+    font-family: 'Doto', sans-serif;
 }
 
 #score-container {
@@ -33,7 +33,8 @@ body {
     width: 800px;
     height: 400px;
     margin: 20px auto;
-    border: 10px solid #3d085e;
+    border: 10px solid;
+    border-image: radial-gradient(circle, #e4c5e4d5, #0808086d) 1;
     background-image: url('./images/bg1.png');
     background-size: cover;
     background-position: center;
@@ -58,6 +59,58 @@ body {
     background-size: cover;
     background-position: center;
     border-radius: 50%;
+    animation: pulsar 1.5s infinite;
+}
+/*Stars animation*/
+@keyframes pulsar {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
+/********Win*******/
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
 
+.win-message {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.win-message h2 {
+    margin-bottom: 20px;
+    color: #4caf50;
+}
+
+#restart-btn {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#restart-btn:hover {
+    background-color: #45a049;
+}

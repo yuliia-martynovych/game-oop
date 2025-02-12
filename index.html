@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aventuras POO</title>
+    <title>Space Cat</title>
     <link rel="stylesheet" href="style.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+    <link rel="icon" href="./images/favicon.png" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -15,6 +16,13 @@
         <div id="score">Estrellas: 0</div>
     </div>
     <div id="game-container"></div>
+    <div id="win-overlay" class="overlay">
+        <div class="win-message">
+            <h2>Felicidades!</h2>
+            <button id="restart-btn">¡Jugar otra vez!</button>
+        </div>
+    </div>
+
     <script type="module" src="./main.js"></script>
 </body>
 
