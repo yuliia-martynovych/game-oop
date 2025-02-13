@@ -1,5 +1,7 @@
 # Space Cat
 
+![Game Screenshot](./public/images/banner.png)
+
 **Space Cat** is a simple game built using Object-Oriented Programming principles in JavaScript. In the game, the player controls a cat in a flying saucer, and the goal is to collect all the stars on the screen.
 
 ## Technologies
