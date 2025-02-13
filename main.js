@@ -7,12 +7,20 @@ class Game {
         this.personaje = null;
         this.monedas = [];
         this.puntuacion = 0;
+        this.timer = 0;
+        this.timerInterval = null;
+        this.playerName = "";
         this.crearEscenario();
         this.agregarEventos();
+
         this.overlay = document.getElementById("win-overlay");
+        this.startOverlay = document.getElementById("start-overlay");
+        this.startBtn = document.getElementById("start-btn");
         this.restartBtn = document.getElementById("restart-btn");
         this.celebrationSound = new Audio('./public/sounds/fanfare.mp3');
         this.celebrationSound.volume = 0.2;
+
+         this.startBtn.addEventListener("click", () => this.startGame());
 
         this.backgroundMusic = new Audio('./public/sounds/background-music-mini.mp3');
         this.backgroundMusic.loop = true; 
@@ -28,6 +36,33 @@ class Game {
         this.restartBtn.addEventListener("click", () => this.reiniciarJuego());
         
     } 
+    startGame() {
+        const playerNameInput = document.getElementById("player-name-input");
+        this.playerName = playerNameInput.value || "Player"; 
+        this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
+
+        this.startOverlay.style.display = "none"; 
+        this.backgroundMusic.play();
+        
+        this.agregarEventos();
+        this.startTimer();  
+    }
+    startTimer() {
+        this.timer = 0;
+        this.timerInterval = setInterval(() => {
+            this.timer++;
+            this.updateScore();
+        }, 1000);
+    }
+
+    stopTimer() {
+        clearInterval(this.timerInterval);
+    }
+
+    updateScore() {
+        this.scoreElement.innerText = `Player: ${this.playerName} | Stars: ${this.puntuacion}/20 | Time: ${this.timer}s`;
+    }
+
     toggleMusic() {
         if (this.backgroundMusic.paused) {
             this.backgroundMusic.play();
@@ -41,8 +76,10 @@ class Game {
     }
 
     crearEscenario() {    
+        if (!this.personaje) { 
         this.personaje = new Personaje();
         this.container.appendChild(this.personaje.element);
+    }
         for (let i = 0; i < 20; i++){
             const moneda = new Moneda();
             this.monedas.push(moneda);
@@ -62,7 +99,7 @@ class Game {
     
                     moneda.coinSound.play();
                     this.puntuacion++;
-                    this.scoreElement.innerText = `Stars: ${this.puntuacion}/20`;
+                    this.updateScore();
                     if (this.monedas.length === 0) {
                         this.mostrarVentanaGanadora();
                     }
@@ -73,7 +110,11 @@ class Game {
     }
     mostrarVentanaGanadora() {
         this.celebrationSound.play();
+        this.stopTimer();
         this.overlay.style.display = 'flex';
+        const winMessage = document.getElementById('win-message');
+        winMessage.innerText = `Congratulations, ${this.playerName}!`;
+
     }
 
     reiniciarJuego() {
@@ -82,8 +123,13 @@ class Game {
         this.container.innerHTML = ''; 
         this.monedas = []; 
         this.puntuacion = 0; 
-        this.scoreElement.innerText = `Estrellas: ${this.puntuacion}`;
+        this.stopTimer();
+        this.startTimer(); 
+        this.scoreElement.innerText = `Stars: ${this.puntuacion}`;
+        this.personaje = new Personaje();
+        this.container.appendChild(this.personaje.element);
         this.crearEscenario(); 
+        this.updateScore();
     }
 }
 

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Space Cat</title>
     <link rel="stylesheet" href="style.css" />
-    <link rel="icon" href="./images/favicon.png" type="image/x-icon">
+    <link rel="icon" href="./public/images/favicon.png" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Princess+Sofia&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poiret+One&display=swap" rel="stylesheet">
 </head>
@@ -21,10 +21,17 @@
         <button id="music-toggle-btn" class="inactive">Music:OFF</button>
     </div>
 </div>
+<div id="start-overlay">
+    <div id="start-window">
+        <h2>Enter your name</h2>
+        <input type="text" id="player-name-input" placeholder="Your name">
+        <button id="start-btn">Start</button>
+    </div>
+</div>
     <div id="game-container"></div>
     <div id="win-overlay" class="overlay">
         <div class="win-message">
-            <h2>Congratulations!</h2>
+            <h2 id="win-message">Congratulations!</h2>
             <button id="restart-btn">Play again</button>
         </div>
     </div>

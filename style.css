@@ -12,6 +12,45 @@ body {
     font-family: 'Princess Sofia', serif;
 }
 
+#start-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+#start-window {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: #8f16cc;
+}
+
+#player-name-input {
+    width: 80%;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+#start-btn {
+    background-color: #8f16cc;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: 'Poiret';
+        font-size: 18px;
+}
+
 #score-container {
     top: 10px;
     left: 10px;
