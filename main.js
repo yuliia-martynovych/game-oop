@@ -10,6 +10,8 @@ class Game {
         this.timer = 0;
         this.timerInterval = null;
         this.playerName = "";
+        this.gameStarted = false;
+
         this.crearEscenario();
         this.agregarEventos();
 
@@ -20,7 +22,8 @@ class Game {
         this.celebrationSound = new Audio('./public/sounds/fanfare.mp3');
         this.celebrationSound.volume = 0.2;
 
-         this.startBtn.addEventListener("click", () => this.startGame());
+        this.startBtn.addEventListener("click", () => this.startGame());
+        
 
         this.backgroundMusic = new Audio('./public/sounds/background-music-mini.mp3');
         this.backgroundMusic.loop = true; 
@@ -34,7 +37,7 @@ class Game {
 
 
         this.restartBtn.addEventListener("click", () => this.reiniciarJuego());
-        
+        this.gameStarted = false
     } 
     startGame() {
         const playerNameInput = document.getElementById("player-name-input");
@@ -45,7 +48,13 @@ class Game {
         this.backgroundMusic.play();
         
         this.agregarEventos();
-        this.startTimer();  
+        this.startTimer(); 
+        this.gameStarted = true;
+    }
+    handleKeydown(event) {
+        if (!this.gameStarted) return;  
+        this.personaje.mover(event);
+        
     }
     startTimer() {
         this.timer = 0;
@@ -116,6 +125,7 @@ class Game {
         const winTime = document.getElementById('win-time');
         winMessage.innerText = `Congratulations, ${this.playerName}!`;
         winTime.innerText = `Your time: ${this.timer}s`; 
+        this.gameStarted = false;
 
     }
 
@@ -150,6 +160,7 @@ class Personaje {
         this.actualizarPosicion();
     }
     mover(evento) {
+        if (!juego.gameStarted) return;
         const containerWidth = document.getElementById("game-container").offsetWidth;
         const containerHeight = document.getElementById("game-container").offsetHeight;
 
@@ -243,21 +254,25 @@ class Moneda {
 const juego = new Game();
 
 document.getElementById('left-btn').addEventListener('click', () => {
+  if (!juego.gameStarted) return;
   const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
   window.dispatchEvent(event);
 });
 
 document.getElementById('up-btn').addEventListener('click', () => {
+  if (!juego.gameStarted) return;
   const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
   window.dispatchEvent(event);
 });
 
 document.getElementById('right-btn').addEventListener('click', () => {
+  if (!juego.gameStarted) return;
   const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
   window.dispatchEvent(event);
 });
 
 document.getElementById('space-btn').addEventListener('click', () => {
+  if (!juego.gameStarted) return;
   const event = new KeyboardEvent('keydown', { key: ' ' });
   window.dispatchEvent(event);
 });
