@@ -172,6 +172,13 @@ body {
     font-size: 24px;
 }
 
+#win-time {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #141414;
+    font-family: 'Poiret';
+}
+
 #restart-btn {
     background-color: #8f16cc;
     color: white;

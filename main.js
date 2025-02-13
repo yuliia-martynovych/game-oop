@@ -113,7 +113,9 @@ class Game {
         this.stopTimer();
         this.overlay.style.display = 'flex';
         const winMessage = document.getElementById('win-message');
+        const winTime = document.getElementById('win-time');
         winMessage.innerText = `Congratulations, ${this.playerName}!`;
+        winTime.innerText = `Your time: ${this.timer}s`; 
 
     }
 
