@@ -14,7 +14,7 @@
 
 ## Installation and Running
 
-To start playing, just open the game file in your browser — no setup required.
+To start playing, just open the game file in your browser, enter your name, and start collecting stars!
 
 ## Controls
 
@@ -26,14 +26,16 @@ To start playing, just open the game file in your browser — no setup required.
 ## Game Features
 
 -   The game uses Object-Oriented Programming principles such as **classes**, **encapsulation**, and **inheritance**.
+-   The player can enter their name and press Start, at which point a timer will begin and stop once all the stars are collected.
 -   Players can toggle the music on or off.
+-   Once the player collects all the stars, they will see a congratulatory message and the time it took to complete the game.
 -   After collecting all the stars, the player can restart the game with a button click.
 
 ## Future Improvements
 
--   Add a **time tracker** to show the player how fast they collected all the stars.
--   Introduce **obstacles** that will block the player from collecting stars.
--   Add the possibility to **lose** if the player fails to collect all the stars in a set amount of time.
+-   Adapt the game for mobile devices.
+-   Add enemies to the game.
+-   Add the possibility to **lose** if the player collides with an enemy.
 
 ## License
 
