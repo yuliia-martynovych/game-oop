@@ -11,10 +11,10 @@ class Game {
         this.agregarEventos();
         this.overlay = document.getElementById("win-overlay");
         this.restartBtn = document.getElementById("restart-btn");
-        this.celebrationSound = new Audio('./sounds/fanfare.mp3');
+        this.celebrationSound = new Audio('./public/sounds/fanfare.mp3');
         this.celebrationSound.volume = 0.2;
 
-        this.backgroundMusic = new Audio('./sounds/background-music-mini.mp3');
+        this.backgroundMusic = new Audio('./public/sounds/background-music-mini.mp3');
         this.backgroundMusic.loop = true; 
         this.backgroundMusic.volume = 0.2; 
         this.backgroundMusic.play()
@@ -183,7 +183,7 @@ class Moneda {
         this.height = 30;
         this.element = document.createElement("div");
         this.element.classList.add("moneda");
-        this.coinSound = new Audio('./sounds/coin.wav');
+        this.coinSound = new Audio('./public/sounds/coin.wav');
         this.actualizarPosicion();
         this.coinSound.volume = 0.2;
     }
@@ -210,6 +210,6 @@ document.getElementById('right-btn').addEventListener('click', () => {
 });
 
 document.getElementById('space-btn').addEventListener('click', () => {
-  const event = new KeyboardEvent('keydown', { key: ' ' }); // Пробел
+  const event = new KeyboardEvent('keydown', { key: ' ' });
   window.dispatchEvent(event);
 });

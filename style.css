@@ -48,7 +48,7 @@ body {
     height: 400px;
     margin: 20px auto;
     border: 3px solid;
-    background-image: url('./images/bg.png');
+    background-image: url('./public/images/bg.png');
     background-size: cover;
     background-position: center;
     overflow: hidden;
@@ -59,7 +59,7 @@ body {
     position: absolute;
     width: 100px;
     height: 70px;
-    background-image: url('./images/red-cat.png');
+    background-image: url('./public/images/red-cat.png');
     background-size: cover;
     position: absolute;
 }
@@ -68,7 +68,7 @@ body {
     position: absolute;
     width: 30px;
     height: 30px;
-    background-image: url('./images/star.png');
+    background-image: url('./public/images/star.png');
     background-size: cover;
     background-position: center;
     border-radius: 50%;
