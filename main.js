@@ -13,6 +13,17 @@ class Game {
         this.gameStarted = false;
         this.isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1366);
         this.isPortrait = window.innerHeight > window.innerWidth;
+        this.isTablet = /iPad|Android.*Tablet|Tablet/.test(navigator.userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024 && !/iPhone/.test(navigator.userAgent));
+        
+        // Отладочная информация
+        console.log('Device detection:', {
+            userAgent: navigator.userAgent,
+            screenWidth: window.innerWidth,
+            screenHeight: window.innerHeight,
+            isMobile: this.isMobile,
+            isTablet: this.isTablet,
+            isPortrait: this.isPortrait
+        });
 
         // Создаем персонажа
         this.personaje = new Personaje(this);
@@ -57,6 +68,7 @@ class Game {
         window.addEventListener('resize', () => {
             this.isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1366);
             this.isPortrait = window.innerHeight > window.innerWidth;
+            this.isTablet = /iPad|Android.*Tablet|Tablet/.test(navigator.userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024 && !/iPhone/.test(navigator.userAgent));
             this.handleOrientationChange();
             this.actualizarTamanos();
         });
@@ -87,27 +99,52 @@ class Game {
     actualizarTamanos() {
         // Обновляем размеры персонажа и монет в зависимости от размера экрана
         if (this.personaje) {
-            if (this.isMobile) {
-                this.personaje.width = 40; // Уменьшили с 60 до 40
-                this.personaje.height = 28; // Уменьшили с 42 до 28
+            if (this.isMobile && !this.isTablet) {
+                // Мобильные телефоны
+                this.personaje.width = 40;
+                this.personaje.height = 28;
+                // Обновляем размеры контейнера для персонажа
+                this.personaje.containerWidth = this.container.offsetWidth;
+                this.personaje.containerHeight = this.container.offsetHeight;
+            } else if (this.isTablet) {
+                // Планшеты - больший размер котика
+                this.personaje.width = 70;
+                this.personaje.height = 50;
                 // Обновляем размеры контейнера для персонажа
                 this.personaje.containerWidth = this.container.offsetWidth;
                 this.personaje.containerHeight = this.container.offsetHeight;
             } else {
+                // Десктоп
                 this.personaje.width = 100;
                 this.personaje.height = 70;
             }
         }
         
         this.monedas.forEach(moneda => {
-            if (this.isMobile) {
-                moneda.width = 15; // Уменьшили с 20 до 15
-                moneda.height = 15; // Уменьшили с 20 до 15
+            if (this.isMobile && !this.isTablet) {
+                // Мобильные телефоны
+                moneda.width = 15;
+                moneda.height = 15;
                 
                 // Перераспределяем звездочки по всей доступной высоте
                 const catStartY = this.container.offsetHeight - 100;
-                const minStarY = 30; // Минимальная высота для звездочек
-                const maxStarY = catStartY - 20; // Максимальная высота (чуть выше стартовой позиции котика)
+                const minStarY = 60;
+                const maxStarY = catStartY - 40;
+                
+                // Если звездочка находится вне допустимого диапазона, перемещаем её
+                if (moneda.y < minStarY || moneda.y > maxStarY) {
+                    moneda.y = Math.random() * (maxStarY - minStarY) + minStarY;
+                    moneda.actualizarPosicion();
+                }
+            } else if (this.isTablet) {
+                // Планшеты - больший размер звездочек
+                moneda.width = 25;
+                moneda.height = 25;
+                
+                // Перераспределяем звездочки для планшетов
+                const catStartY = this.container.offsetHeight - 100;
+                const minStarY = 50;
+                const maxStarY = catStartY - 80; // Учитываем высоту прыжка
                 
                 // Если звездочка находится вне допустимого диапазона, перемещаем её
                 if (moneda.y < minStarY || moneda.y > maxStarY) {
@@ -115,6 +152,7 @@ class Game {
                     moneda.actualizarPosicion();
                 }
             } else {
+                // Десктоп
                 moneda.width = 30;
                 moneda.height = 30;
             }
@@ -201,12 +239,11 @@ class Game {
         
         // Создаем новый обработчик клавиатуры
         this.handleKeydown = (e) => {
-            console.log('Key pressed:', e.key, 'Game started:', this.gameStarted, 'Personaje exists:', !!this.personaje);
             if (this.personaje && this.gameStarted) {
                 this.personaje.mover(e);
             }
         };
-        window.addEventListener("keydown", this.handleKeydown);
+        window.addEventListener("keydown", this.handleKeydown, { passive: true });
         
         // Сенсорные события для мобильных устройств
         if (this.isMobile) {
@@ -239,63 +276,55 @@ class Game {
         this.touchHandlers = {
             leftTouch: (e) => {
                 e.preventDefault();
-                console.log('Left touch, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
                 window.dispatchEvent(event);
             },
             rightTouch: (e) => {
                 e.preventDefault();
-                console.log('Right touch, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
                 window.dispatchEvent(event);
             },
             upTouch: (e) => {
                 e.preventDefault();
-                console.log('Up touch, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
                 window.dispatchEvent(event);
             },
             spaceTouch: (e) => {
                 e.preventDefault();
-                console.log('Space touch, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: ' ' });
                 window.dispatchEvent(event);
             },
             leftClick: () => {
-                console.log('Left click, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
                 window.dispatchEvent(event);
             },
             rightClick: () => {
-                console.log('Right click, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
                 window.dispatchEvent(event);
             },
             upClick: () => {
-                console.log('Up click, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
                 window.dispatchEvent(event);
             },
             spaceClick: () => {
-                console.log('Space click, gameStarted:', this.gameStarted);
                 if (!this.gameStarted) return;
                 const event = new KeyboardEvent('keydown', { key: ' ' });
                 window.dispatchEvent(event);
             }
         };
         
-        // Добавляем новые обработчики
-        leftBtn.addEventListener('touchstart', this.touchHandlers.leftTouch);
-        rightBtn.addEventListener('touchstart', this.touchHandlers.rightTouch);
-        upBtn.addEventListener('touchstart', this.touchHandlers.upTouch);
-        spaceBtn.addEventListener('touchstart', this.touchHandlers.spaceTouch);
+        // Добавляем новые обработчики с passive для улучшения производительности
+        leftBtn.addEventListener('touchstart', this.touchHandlers.leftTouch, { passive: false });
+        rightBtn.addEventListener('touchstart', this.touchHandlers.rightTouch, { passive: false });
+        upBtn.addEventListener('touchstart', this.touchHandlers.upTouch, { passive: false });
+        spaceBtn.addEventListener('touchstart', this.touchHandlers.spaceTouch, { passive: false });
         
         // Также добавляем обработчики для кликов (для устройств с мышью)
         leftBtn.addEventListener('click', this.touchHandlers.leftClick);
@@ -382,11 +411,18 @@ class Personaje {
         this.containerHeight = container.offsetHeight;
         
         // Устанавливаем начальную позицию в зависимости от устройства
-        if (this.game.isMobile) {
+        if (this.game.isMobile && !this.game.isTablet) {
+            // Мобильные телефоны
             this.x = 50;
             this.y = this.containerHeight - 100; // Размещаем персонажа внизу экрана
             this.startY = this.y; // Сохраняем стартовую позицию
+        } else if (this.game.isTablet) {
+            // Планшеты
+            this.x = 50;
+            this.y = this.containerHeight - 120; // Размещаем персонажа чуть выше для планшетов
+            this.startY = this.y; // Сохраняем стартовую позицию
         } else {
+            // Десктоп
             this.x = 50;
             this.y = 300;
             this.startY = this.y; // Сохраняем стартовую позицию
@@ -422,18 +458,34 @@ class Personaje {
             this.saltarAlto();
         }
         
-        // Ограничиваем позицию котика на мобильных устройствах
-        if (this.game.isMobile) {
-            // Не позволяем котику упасть ниже стартовой позиции
+        // Ограничиваем позицию котика в зависимости от устройства
+        if (this.game.isMobile && !this.game.isTablet) {
+            // Мобильные телефоны
             if (this.y > this.startY) {
                 this.y = this.startY;
             }
             
-            // Не позволяем котику подняться слишком высоко
-            const maxHeight = this.startY - 120; // Максимальная высота для котика
+            const maxHeight = this.startY - 90; // Новая максимальная высота для мобильных
             if (this.y < maxHeight) {
                 this.y = maxHeight;
             }
+        } else if (this.game.isTablet) {
+            // Планшеты - больший диапазон движения
+            if (this.y > this.startY) {
+                this.y = this.startY;
+            }
+            
+            const maxHeight = this.startY - 270; // Увеличили высоту для планшетов
+            if (this.y < maxHeight) {
+                this.y = maxHeight;
+            }
+        }
+        
+        // Отладочная информация для мобильных устройств
+        if (this.game.isMobile && !this.game.isTablet) {
+            console.log('Mobile movement - Y:', this.y, 'StartY:', this.startY, 'MaxHeight:', this.startY - 30);
+        } else if (this.game.isTablet) {
+            console.log('Tablet movement - Y:', this.y, 'StartY:', this.startY, 'MaxHeight:', this.startY - 270);
         }
         
         this.actualizarPosicion();
@@ -441,19 +493,27 @@ class Personaje {
     
     saltar() {
         this.saltando = true;
-        // Ограничиваем высоту прыжка для мобильных устройств
+        // Ограничиваем высоту прыжка в зависимости от устройства
         let alturaMaxima;
-        if (this.game.isMobile) {
-            // На мобильных ограничиваем прыжок, чтобы котик не выпрыгивал слишком высоко
-            const maxJumpHeight = 60; // Максимальная высота прыжка на мобильных
+        if (this.game.isMobile && !this.game.isTablet) {
+            // На мобильных телефонах ограничиваем прыжок
+            const maxJumpHeight = 45;
             alturaMaxima = this.y - maxJumpHeight;
+            console.log('Mobile jump:', maxJumpHeight, 'px', 'Current Y:', this.y, 'Target Y:', alturaMaxima);
+        } else if (this.game.isTablet) {
+            // На планшетах - большая высота прыжка
+            const maxJumpHeight = 120;
+            alturaMaxima = this.y - maxJumpHeight;
+            console.log('Tablet jump:', maxJumpHeight, 'px');
         } else {
+            // На десктопе
             alturaMaxima = this.y - 150;
+            console.log('Desktop jump: 150px');
         }
         
         const salto = setInterval(() => {
             if (this.y > alturaMaxima) {
-                this.y -= 10;
+                this.y -= 15; // Увеличили скорость движения вверх
             } else {
                 clearInterval(salto);
                 this.caer();
@@ -464,19 +524,27 @@ class Personaje {
 
     saltarAlto() {
         this.saltando = true;
-        // Ограничиваем высоту высокого прыжка для мобильных устройств
+        // Ограничиваем высоту высокого прыжка в зависимости от устройства
         let alturaMaxima;
-        if (this.game.isMobile) {
-            // На мобильных ограничиваем высокий прыжок
-            const maxHighJumpHeight = 100; // Максимальная высота высокого прыжка на мобильных
+        if (this.game.isMobile && !this.game.isTablet) {
+            // На мобильных телефонах ограничиваем высокий прыжок
+            const maxHighJumpHeight = 80; // Очень низкий высокий прыжок для мобильных
             alturaMaxima = this.y - maxHighJumpHeight;
+            console.log('Mobile high jump:', maxHighJumpHeight, 'px', 'Current Y:', this.y, 'Target Y:', alturaMaxima);
+        } else if (this.game.isTablet) {
+            // На планшетах - большая высота высокого прыжка
+            const maxHighJumpHeight = 250;
+            alturaMaxima = this.y - maxHighJumpHeight;
+            console.log('Tablet high jump:', maxHighJumpHeight, 'px');
         } else {
+            // На десктопе
             alturaMaxima = this.y - 250;
+            console.log('Desktop high jump: 250px');
         }
         
         const saltoAlto = setInterval(() => {
             if (this.y > alturaMaxima) {
-                this.y -= 10; 
+                this.y -= 15; // Увеличили скорость движения вверх
             } else {
                 clearInterval(saltoAlto);
                 this.caer();
@@ -489,10 +557,14 @@ class Personaje {
         const gravedad = setInterval(() => {
             // Определяем нижнюю границу в зависимости от устройства
             let bottomLimit;
-            if (this.game.isMobile) {
-                // На мобильных котик не должен падать ниже стартовой позиции
+            if (this.game.isMobile && !this.game.isTablet) {
+                // На мобильных телефонах котик не должен падать ниже стартовой позиции
+                bottomLimit = this.startY;
+            } else if (this.game.isTablet) {
+                // На планшетах котик не должен падать ниже стартовой позиции
                 bottomLimit = this.startY;
             } else {
+                // На десктопе
                 bottomLimit = 300;
             }
             
@@ -530,15 +602,27 @@ class Moneda {
         const containerHeight = container.offsetHeight;
         
         // Генерируем позиции в зависимости от устройства
-        if (this.game.isMobile) {
-            // Для мобильных устройств - распределяем звездочки по всей высоте, где котик может достать
+        if (this.game.isMobile && !this.game.isTablet) {
+            // Для мобильных телефонов - распределяем звездочки по всей высоте, где котик может достать
             this.x = Math.random() * (containerWidth - 60) + 30; // Оставляем отступы по краям
             
             // Определяем диапазон высоты для звездочек
             const catStartY = containerHeight - 100; // Стартовая позиция котика
-            const maxJumpHeight = 120; // Максимальная высота прыжка котика
-            const minStarY = 30; // Минимальная высота для звездочек (от верха экрана)
-            const maxStarY = catStartY - 20; // Максимальная высота (чуть выше стартовой позиции котика)
+            const maxJumpHeight = 45; // Максимальная высота прыжка котика
+            const minStarY = 60; // Минимальная высота для звездочек (от верха экрана)
+            const maxStarY = catStartY - 40; // Максимальная высота (учитываем высоту прыжка)
+            
+            // Распределяем звездочки равномерно по всей доступной высоте
+            this.y = Math.random() * (maxStarY - minStarY) + minStarY;
+        } else if (this.game.isTablet) {
+            // Для планшетов - распределяем звездочки с учетом большей высоты прыжка
+            this.x = Math.random() * (containerWidth - 80) + 40; // Оставляем отступы по краям
+            
+            // Определяем диапазон высоты для звездочек на планшетах
+            const catStartY = containerHeight - 100; // Стартовая позиция котика
+            const maxJumpHeight = 280; // Максимальная высота прыжка котика на планшетах
+            const minStarY = 50; // Минимальная высота для звездочек
+            const maxStarY = catStartY - 80; // Максимальная высота (учитываем высоту прыжка)
             
             // Распределяем звездочки равномерно по всей доступной высоте
             this.y = Math.random() * (maxStarY - minStarY) + minStarY;
