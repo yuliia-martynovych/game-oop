@@ -128,6 +128,10 @@ class Game {
         scoreContainer.style.display = "block";
         this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
 
+        // Show game controls
+        const gameControls = document.getElementById("game-controls");
+        gameControls.style.display = "flex";
+
         this.startOverlay.style.display = "none"; 
         // Don't automatically play music when game starts
         // this.backgroundMusic.play();
@@ -349,6 +353,10 @@ class Game {
         // Устанавливаем флаг, что игра запущена
         this.gameStarted = true;
         console.log('Juego reiniciado, gameStarted:', this.gameStarted);
+        
+        // Убеждаемся, что кнопки управления видимы
+        const gameControls = document.getElementById("game-controls");
+        gameControls.style.display = "flex";
     }
 }
 

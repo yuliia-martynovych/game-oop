@@ -294,11 +294,22 @@ header h1 {
 #game-controls {
     position: absolute;
     bottom: 20px;    
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 10;
+}
+
+.left-controls {
     display: flex;
     gap: 10px;
-    z-index: 10;
+}
+
+.right-controls {
+    display: flex;
+    gap: 10px;
 }
 
 .control-btn {
@@ -450,6 +461,14 @@ header h1 {
     
     #game-controls {
         bottom: 10px;
+        padding: 0 15px;
+    }
+    
+    .left-controls {
+        gap: 8px;
+    }
+    
+    .right-controls {
         gap: 8px;
     }
     
