@@ -12,6 +12,7 @@ class Game {
         this.playerName = "";
         this.gameStarted = false;
         this.isMobile = window.innerWidth <= 1024;
+        this.isPortrait = window.innerHeight > window.innerWidth;
 
         this.crearEscenario();
         this.agregarEventos();
@@ -41,19 +42,54 @@ class Game {
         this.restartBtn.addEventListener("click", () => this.reiniciarJuego());
         this.gameStarted = false;
         
-        // Добавляем обработчик изменения размера окна
+        // Add orientation change handler
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                this.handleOrientationChange();
+            }, 100);
+        });
+        
+        // Add resize handler
         window.addEventListener('resize', () => {
             this.isMobile = window.innerWidth <= 1024;
+            this.isPortrait = window.innerHeight > window.innerWidth;
+            this.handleOrientationChange();
             this.actualizarTamanos();
         });
+        
+        // Initial orientation check
+        this.handleOrientationChange();
     } 
+    
+    handleOrientationChange() {
+        const rotateOverlay = document.getElementById('rotate-phone-overlay');
+        const isMobilePortrait = this.isMobile && this.isPortrait;
+        
+        if (isMobilePortrait) {
+            // Show rotate overlay for mobile portrait
+            rotateOverlay.style.display = 'flex';
+            // Pause music if playing
+            if (!this.backgroundMusic.paused) {
+                this.backgroundMusic.pause();
+                this.musicToggleBtn.textContent = "Music: OFF";
+                this.musicToggleBtn.classList.add("inactive");
+            }
+        } else {
+            // Hide rotate overlay for landscape or desktop
+            rotateOverlay.style.display = 'none';
+        }
+    }
     
     actualizarTamanos() {
         // Обновляем размеры персонажа и монет в зависимости от размера экрана
         if (this.personaje) {
             if (this.isMobile) {
-                this.personaje.width = 80;
-                this.personaje.height = 56;
+                if (this.isPortrait) {
+                    // Don't update sizes in portrait mode
+                    return;
+                }
+                this.personaje.width = 60;
+                this.personaje.height = 42;
             } else {
                 this.personaje.width = 100;
                 this.personaje.height = 70;
@@ -62,8 +98,12 @@ class Game {
         
         this.monedas.forEach(moneda => {
             if (this.isMobile) {
-                moneda.width = 25;
-                moneda.height = 25;
+                if (this.isPortrait) {
+                    // Don't update sizes in portrait mode
+                    return;
+                }
+                moneda.width = 20;
+                moneda.height = 20;
             } else {
                 moneda.width = 30;
                 moneda.height = 30;
@@ -73,6 +113,11 @@ class Game {
     }
     
     startGame() {
+        // Don't start game if in portrait mode on mobile
+        if (this.isMobile && this.isPortrait) {
+            return;
+        }
+        
         const playerNameInput = document.getElementById("player-name-input");
         this.playerName = playerNameInput.value || "Player"; 
         this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
@@ -89,6 +134,9 @@ class Game {
     
     handleKeydown(event) {
         if (!this.gameStarted) return;  
+        // Don't handle keys if in portrait mode on mobile
+        if (this.isMobile && this.isPortrait) return;
+        
         this.personaje.mover(event);
         
     }
@@ -110,6 +158,9 @@ class Game {
     }
 
     toggleMusic() {
+        // Don't toggle music if in portrait mode on mobile
+        if (this.isMobile && this.isPortrait) return;
+        
         if (this.backgroundMusic.paused) {
             this.backgroundMusic.play();
             this.musicToggleBtn.textContent = "Music: ON";
@@ -167,53 +218,53 @@ class Game {
         // Добавляем новые обработчики
         newLeftBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
             window.dispatchEvent(event);
         });
         
         newRightBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
             window.dispatchEvent(event);
         });
         
         newUpBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
             window.dispatchEvent(event);
         });
         
         newSpaceBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: ' ' });
             window.dispatchEvent(event);
         });
         
         // Также добавляем обработчики для кликов (для устройств с мышью)
         newLeftBtn.addEventListener('click', () => {
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
             window.dispatchEvent(event);
         });
         
         newRightBtn.addEventListener('click', () => {
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
             window.dispatchEvent(event);
         });
         
         newUpBtn.addEventListener('click', () => {
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
             window.dispatchEvent(event);
         });
         
         newSpaceBtn.addEventListener('click', () => {
-            if (!this.gameStarted) return;
+            if (!this.gameStarted || (this.isMobile && this.isPortrait)) return;
             const event = new KeyboardEvent('keydown', { key: ' ' });
             window.dispatchEvent(event);
         });
@@ -221,6 +272,9 @@ class Game {
     
     checkColisiones() {
         setInterval(() => {
+            // Don't check collisions if in portrait mode on mobile
+            if (this.isMobile && this.isPortrait) return;
+            
             this.monedas.forEach((moneda, index) => {
                 if (this.personaje.colisionaCon(moneda)) {
                     this.container.removeChild(moneda.element);
@@ -251,6 +305,8 @@ class Game {
     }
 
     reiniciarJuego() {
+        // Don't restart if in portrait mode on mobile
+        if (this.isMobile && this.isPortrait) return;
 
         this.overlay.style.display = 'none'; 
         this.container.innerHTML = ''; 
@@ -283,7 +339,10 @@ class Personaje {
     }
     
     mover(evento) {
-        if (!juego.gameStarted) return;
+        if (!juego.gameStarted) return;  
+        // Don't move if in portrait mode on mobile
+        if (juego.isMobile && juego.isPortrait) return;
+        
         const containerWidth = document.getElementById("game-container").offsetWidth;
         const containerHeight = document.getElementById("game-container").offsetHeight;
 

@@ -16,15 +16,27 @@
 </head>
 
 <body>
-    <h1>Collect all the stars!</h1>
-    <div id="game-info">
-        <div id="score-container">
-            <div id="score">Stars: 0/20</div>
+    <!-- Rotate phone overlay for mobile portrait -->
+    <div id="rotate-phone-overlay">
+        <div class="rotate-icon">📱</div>
+        <h2>Please Rotate Your Device</h2>
+        <p>This game works best in landscape mode</p>
+    </div>
+
+    <!-- Header with player info, title and music button -->
+    <header>
+        <div id="game-info">
+            <div id="score-container">
+                <div id="score">Stars: 0/20</div>
+            </div>
         </div>
+        <h1>Collect all the stars!</h1>
         <div id="music-toggle">
             <button id="music-toggle-btn" class="inactive">Music: OFF</button>
         </div>
-    </div>
+    </header>
+
+    <!-- Start overlay -->
     <div id="start-overlay">
         <div id="start-window">
             <h2>Enter your name</h2>
@@ -32,7 +44,11 @@
             <button id="start-btn">Start</button>
         </div>
     </div>
+
+    <!-- Game container -->
     <div id="game-container"></div>
+
+    <!-- Win overlay -->
     <div id="win-overlay" class="overlay">
         <div class="win-message">
             <h2 id="win-message">Congratulations!</h2>
@@ -40,12 +56,15 @@
             <button id="restart-btn">Play again</button>
         </div>
     </div>
+
+    <!-- Game controls -->
     <div id="game-controls">
         <button class="control-btn" id="left-btn">←</button>
         <button class="control-btn" id="up-btn">↑</button>
         <button class="control-btn" id="right-btn">→</button>
         <button class="control-btn" id="space-btn">␣</button>
     </div>
+
     <script type="module" src="./main.js"></script>
 </body>
 
