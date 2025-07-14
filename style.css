@@ -192,7 +192,7 @@ header h1 {
     height: 70px;
     background-image: url('./public/images/red-cat.png');
     background-size: cover;
-    position: absolute;
+    background-position: center;
 }
 
 .moneda {
@@ -200,8 +200,9 @@ header h1 {
     width: 30px;
     height: 30px;
     background-image: url('./public/images/star.png');
-    background-size: cover;
+    background-size: contain;
     background-position: center;
+    background-repeat: no-repeat;
     border-radius: 50%;
     animation: pulsar 1.5s infinite;
 }
@@ -432,13 +433,19 @@ header h1 {
     }
     
     .personaje {
-        width: 60px;
-        height: 42px;
+        width: 40px;
+        height: 28px;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
     }
     
     .moneda {
-        width: 20px;
-        height: 20px;
+        width: 15px;
+        height: 15px;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
     }
     
     #game-controls {
