@@ -120,6 +120,10 @@ class Game {
         
         const playerNameInput = document.getElementById("player-name-input");
         this.playerName = playerNameInput.value || "Player"; 
+        
+        // Show score container and update score
+        const scoreContainer = document.getElementById("score-container");
+        scoreContainer.style.display = "block";
         this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
 
         this.startOverlay.style.display = "none"; 
@@ -314,7 +318,7 @@ class Game {
         this.puntuacion = 0; 
         this.stopTimer();
         this.startTimer(); 
-        this.scoreElement.innerText = `Stars: ${this.puntuacion}`;
+        this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
         this.personaje = new Personaje();
         this.container.appendChild(this.personaje.element);
         this.crearEscenario(); 
