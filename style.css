@@ -623,4 +623,9 @@ header h1 {
         min-height: 44px;
         min-width: 120px;
     }
+    
+    /* Show controls on touch devices */
+    #game-controls {
+        display: flex !important;
+    }
 }

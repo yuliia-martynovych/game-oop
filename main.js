@@ -11,7 +11,7 @@ class Game {
         this.timerInterval = null;
         this.playerName = "";
         this.gameStarted = false;
-        this.isMobile = window.innerWidth <= 1024;
+        this.isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1366);
         this.isPortrait = window.innerHeight > window.innerWidth;
 
         // Создаем персонажа
@@ -55,7 +55,7 @@ class Game {
         
         // Add resize handler
         window.addEventListener('resize', () => {
-            this.isMobile = window.innerWidth <= 1024;
+            this.isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1366);
             this.isPortrait = window.innerHeight > window.innerWidth;
             this.handleOrientationChange();
             this.actualizarTamanos();
