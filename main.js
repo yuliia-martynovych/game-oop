@@ -104,11 +104,14 @@ class Game {
                 moneda.width = 15; // Уменьшили с 20 до 15
                 moneda.height = 15; // Уменьшили с 20 до 15
                 
-                // Проверяем, что звездочки не находятся ниже стартовой позиции котика
+                // Перераспределяем звездочки по всей доступной высоте
                 const catStartY = this.container.offsetHeight - 100;
-                if (moneda.y > catStartY - 40) {
-                    // Если звездочка слишком низко, перемещаем её выше
-                    moneda.y = Math.random() * (catStartY - 90) + 50;
+                const minStarY = 30; // Минимальная высота для звездочек
+                const maxStarY = catStartY - 20; // Максимальная высота (чуть выше стартовой позиции котика)
+                
+                // Если звездочка находится вне допустимого диапазона, перемещаем её
+                if (moneda.y < minStarY || moneda.y > maxStarY) {
+                    moneda.y = Math.random() * (maxStarY - minStarY) + minStarY;
                     moneda.actualizarPosicion();
                 }
             } else {
@@ -128,9 +131,13 @@ class Game {
         scoreContainer.style.display = "block";
         this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
 
-        // Show game controls
+        // Show game controls only on mobile devices
         const gameControls = document.getElementById("game-controls");
-        gameControls.style.display = "flex";
+        if (this.isMobile) {
+            gameControls.style.display = "flex";
+        } else {
+            gameControls.style.display = "none";
+        }
 
         this.startOverlay.style.display = "none"; 
         // Don't automatically play music when game starts
@@ -354,9 +361,13 @@ class Game {
         this.gameStarted = true;
         console.log('Juego reiniciado, gameStarted:', this.gameStarted);
         
-        // Убеждаемся, что кнопки управления видимы
+        // Убеждаемся, что кнопки управления видимы только на мобильных устройствах
         const gameControls = document.getElementById("game-controls");
-        gameControls.style.display = "flex";
+        if (this.isMobile) {
+            gameControls.style.display = "flex";
+        } else {
+            gameControls.style.display = "none";
+        }
     }
 }
 
@@ -520,18 +531,21 @@ class Moneda {
         
         // Генерируем позиции в зависимости от устройства
         if (this.game.isMobile) {
-            // Для мобильных устройств - ограничиваем высоту звездочек
+            // Для мобильных устройств - распределяем звездочки по всей высоте, где котик может достать
             this.x = Math.random() * (containerWidth - 60) + 30; // Оставляем отступы по краям
             
-            // Определяем стартовую высоту котика для ограничения звездочек
+            // Определяем диапазон высоты для звездочек
             const catStartY = containerHeight - 100; // Стартовая позиция котика
-            const maxStarY = catStartY - 40; // Максимальная высота для звездочек (доступная для прыжка)
-            const minStarY = 50; // Минимальная высота для звездочек
+            const maxJumpHeight = 120; // Максимальная высота прыжка котика
+            const minStarY = 30; // Минимальная высота для звездочек (от верха экрана)
+            const maxStarY = catStartY - 20; // Максимальная высота (чуть выше стартовой позиции котика)
             
+            // Распределяем звездочки равномерно по всей доступной высоте
             this.y = Math.random() * (maxStarY - minStarY) + minStarY;
         } else {
-            // Для десктопа - как было
+            // Для десктопа - распределяем по всей высоте игрового поля
             this.x = Math.random() * 700 + 50;
+            // Распределяем звездочки по всей высоте от 50 до 300 пикселей
             this.y = Math.random() * 250 + 50;
         }
         
