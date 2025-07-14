@@ -3,7 +3,11 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#8f16cc" />
     <title>Space Cat</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="icon" href="./public/images/favicon.png" type="image/x-icon">
@@ -14,20 +18,20 @@
 <body>
     <h1>Collect all the stars!</h1>
     <div id="game-info">
-    <div id="score-container">
-        <div id="score">Stars: 0/20</div>
+        <div id="score-container">
+            <div id="score">Stars: 0/20</div>
+        </div>
+        <div id="music-toggle">
+            <button id="music-toggle-btn" class="inactive">Music: OFF</button>
+        </div>
     </div>
-    <div id="music-toggle">
-        <button id="music-toggle-btn" class="inactive">Music:OFF</button>
+    <div id="start-overlay">
+        <div id="start-window">
+            <h2>Enter your name</h2>
+            <input type="text" id="player-name-input" placeholder="Your name" autocomplete="off">
+            <button id="start-btn">Start</button>
+        </div>
     </div>
-</div>
-<div id="start-overlay">
-    <div id="start-window">
-        <h2>Enter your name</h2>
-        <input type="text" id="player-name-input" placeholder="Your name">
-        <button id="start-btn">Start</button>
-    </div>
-</div>
     <div id="game-container"></div>
     <div id="win-overlay" class="overlay">
         <div class="win-message">
@@ -36,12 +40,12 @@
             <button id="restart-btn">Play again</button>
         </div>
     </div>
-<div id="game-controls">
-    <button class="control-btn" id="left-btn">←</button>
-    <button class="control-btn" id="up-btn">↑</button>
-    <button class="control-btn" id="right-btn">→</button>
-    <button class="control-btn" id="space-btn">␣</button>
-</div>
+    <div id="game-controls">
+        <button class="control-btn" id="left-btn">←</button>
+        <button class="control-btn" id="up-btn">↑</button>
+        <button class="control-btn" id="right-btn">→</button>
+        <button class="control-btn" id="space-btn">␣</button>
+    </div>
     <script type="module" src="./main.js"></script>
 </body>
 

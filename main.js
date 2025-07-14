@@ -11,6 +11,7 @@ class Game {
         this.timerInterval = null;
         this.playerName = "";
         this.gameStarted = false;
+        this.isMobile = window.innerWidth <= 1024;
 
         this.crearEscenario();
         this.agregarEventos();
@@ -28,7 +29,8 @@ class Game {
         this.backgroundMusic = new Audio('./public/sounds/background-music-mini.mp3');
         this.backgroundMusic.loop = true; 
         this.backgroundMusic.volume = 0.2; 
-        this.backgroundMusic.play()
+        // Music is OFF by default - don't play automatically
+        // this.backgroundMusic.play()
 
         // Background music button
         this.musicToggleBtn = document.getElementById("music-toggle-btn");
@@ -37,25 +39,60 @@ class Game {
 
 
         this.restartBtn.addEventListener("click", () => this.reiniciarJuego());
-        this.gameStarted = false
+        this.gameStarted = false;
+        
+        // Добавляем обработчик изменения размера окна
+        window.addEventListener('resize', () => {
+            this.isMobile = window.innerWidth <= 1024;
+            this.actualizarTamanos();
+        });
     } 
+    
+    actualizarTamanos() {
+        // Обновляем размеры персонажа и монет в зависимости от размера экрана
+        if (this.personaje) {
+            if (this.isMobile) {
+                this.personaje.width = 80;
+                this.personaje.height = 56;
+            } else {
+                this.personaje.width = 100;
+                this.personaje.height = 70;
+            }
+        }
+        
+        this.monedas.forEach(moneda => {
+            if (this.isMobile) {
+                moneda.width = 25;
+                moneda.height = 25;
+            } else {
+                moneda.width = 30;
+                moneda.height = 30;
+            }
+            moneda.actualizarPosicion();
+        });
+    }
+    
     startGame() {
         const playerNameInput = document.getElementById("player-name-input");
         this.playerName = playerNameInput.value || "Player"; 
         this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
 
         this.startOverlay.style.display = "none"; 
-        this.backgroundMusic.play();
+        // Don't automatically play music when game starts
+        // this.backgroundMusic.play();
         
         this.agregarEventos();
         this.startTimer(); 
         this.gameStarted = true;
+        this.actualizarTamanos();
     }
+    
     handleKeydown(event) {
         if (!this.gameStarted) return;  
         this.personaje.mover(event);
         
     }
+    
     startTimer() {
         this.timer = 0;
         this.timerInterval = setInterval(() => {
@@ -75,11 +112,11 @@ class Game {
     toggleMusic() {
         if (this.backgroundMusic.paused) {
             this.backgroundMusic.play();
-            this.musicToggleBtn.textContent = "Music:ON";
+            this.musicToggleBtn.textContent = "Music: ON";
             this.musicToggleBtn.classList.remove("inactive");
         } else {
             this.backgroundMusic.pause();
-            this.musicToggleBtn.textContent = "Music:OFF"; 
+            this.musicToggleBtn.textContent = "Music: OFF"; 
             this.musicToggleBtn.classList.add("inactive");
         }
     }
@@ -95,10 +132,93 @@ class Game {
             this.container.appendChild(moneda.element);
         }
     }
+    
     agregarEventos() {
+        // Клавиатурные события
         window.addEventListener("keydown", (e) => this.personaje.mover(e));
+        
+        // Сенсорные события для мобильных устройств
+        if (this.isMobile) {
+            this.agregarEventosTactiles();
+        }
+        
         this.checkColisiones();
     }
+    
+    agregarEventosTactiles() {
+        // Обработчики для кнопок управления
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const upBtn = document.getElementById('up-btn');
+        const spaceBtn = document.getElementById('space-btn');
+        
+        // Удаляем старые обработчики
+        leftBtn.replaceWith(leftBtn.cloneNode(true));
+        rightBtn.replaceWith(rightBtn.cloneNode(true));
+        upBtn.replaceWith(upBtn.cloneNode(true));
+        spaceBtn.replaceWith(spaceBtn.cloneNode(true));
+        
+        // Получаем новые элементы
+        const newLeftBtn = document.getElementById('left-btn');
+        const newRightBtn = document.getElementById('right-btn');
+        const newUpBtn = document.getElementById('up-btn');
+        const newSpaceBtn = document.getElementById('space-btn');
+        
+        // Добавляем новые обработчики
+        newLeftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
+            window.dispatchEvent(event);
+        });
+        
+        newRightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+            window.dispatchEvent(event);
+        });
+        
+        newUpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
+            window.dispatchEvent(event);
+        });
+        
+        newSpaceBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: ' ' });
+            window.dispatchEvent(event);
+        });
+        
+        // Также добавляем обработчики для кликов (для устройств с мышью)
+        newLeftBtn.addEventListener('click', () => {
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
+            window.dispatchEvent(event);
+        });
+        
+        newRightBtn.addEventListener('click', () => {
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
+            window.dispatchEvent(event);
+        });
+        
+        newUpBtn.addEventListener('click', () => {
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
+            window.dispatchEvent(event);
+        });
+        
+        newSpaceBtn.addEventListener('click', () => {
+            if (!this.gameStarted) return;
+            const event = new KeyboardEvent('keydown', { key: ' ' });
+            window.dispatchEvent(event);
+        });
+    }
+    
     checkColisiones() {
         setInterval(() => {
             this.monedas.forEach((moneda, index) => {
@@ -117,6 +237,7 @@ class Game {
         },
             100);
     }
+    
     mostrarVentanaGanadora() {
         this.celebrationSound.play();
         this.stopTimer();
@@ -142,6 +263,7 @@ class Game {
         this.container.appendChild(this.personaje.element);
         this.crearEscenario(); 
         this.updateScore();
+        this.actualizarTamanos();
     }
 }
 
@@ -159,6 +281,7 @@ class Personaje {
         this.element.classList.add("personaje");
         this.actualizarPosicion();
     }
+    
     mover(evento) {
         if (!juego.gameStarted) return;
         const containerWidth = document.getElementById("game-container").offsetWidth;
@@ -179,6 +302,7 @@ class Personaje {
         }
         this.actualizarPosicion();
     }
+    
     saltar() {
         this.saltando = true;
         let alturaMaxima = this.y - 150;
@@ -221,10 +345,12 @@ class Personaje {
 
             20);
     }
+    
     actualizarPosicion() {
         this.element.style.left = `${this.x}px`;
         this.element.style.top = `${this.y}px`;
     }
+    
    colisionaCon(objeto) {
     return (
       this.x < objeto.x + objeto.width &&
@@ -234,6 +360,7 @@ class Personaje {
     );
 }
 }
+
 class Moneda {
     constructor() {
         this.x = Math.random() * 700 + 50;
@@ -246,33 +373,11 @@ class Moneda {
         this.actualizarPosicion();
         this.coinSound.volume = 0.2;
     }
+    
     actualizarPosicion() {
         this.element.style.left = `${this.x}px`;
         this.element.style.top = `${this.y}px`;
     }
 }
+
 const juego = new Game();
-
-document.getElementById('left-btn').addEventListener('click', () => {
-  if (!juego.gameStarted) return;
-  const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-  window.dispatchEvent(event);
-});
-
-document.getElementById('up-btn').addEventListener('click', () => {
-  if (!juego.gameStarted) return;
-  const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
-  window.dispatchEvent(event);
-});
-
-document.getElementById('right-btn').addEventListener('click', () => {
-  if (!juego.gameStarted) return;
-  const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-  window.dispatchEvent(event);
-});
-
-document.getElementById('space-btn').addEventListener('click', () => {
-  if (!juego.gameStarted) return;
-  const event = new KeyboardEvent('keydown', { key: ' ' });
-  window.dispatchEvent(event);
-});
