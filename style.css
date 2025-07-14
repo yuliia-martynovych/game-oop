@@ -344,8 +344,8 @@ header h1 {
         overflow: hidden;
     }
     
-    /* Hide all game elements in portrait mode */
-    header, h1, #game-info, #game-container, #game-controls, #start-overlay, #win-overlay {
+    /* Hide all game elements in portrait mode except controls */
+    header, h1, #game-info, #game-container, #start-overlay, #win-overlay {
         display: none !important;
     }
 }
@@ -526,7 +526,7 @@ header h1 {
     }
     
     /* Hide all game elements in portrait mode */
-    header, h1, #game-info, #game-container, #game-controls, #start-overlay, #win-overlay {
+    header, h1, #game-info, #game-container, #start-overlay, #win-overlay {
         display: none !important;
     }
 }
