@@ -27,13 +27,17 @@
     <header>
         <div id="game-info">
             <div id="score-container" style="display: none;">
-                <div id="score">Stars: 0/20</div>
+                <span id="player-label"></span>
+                <span class="hud-sep">&middot;</span>
+                <span id="score">0/20</span>
+                <span class="hud-sep">&middot;</span>
+                <span id="timer">0:00</span>
+                <span id="lives">&hearts;&hearts;&hearts;</span>
             </div>
-            <div id="lives" style="display: none;">&hearts;&hearts;&hearts;</div>
         </div>
         <h1>Collect all the stars!</h1>
         <div id="music-toggle">
-            <button id="music-toggle-btn" class="inactive">Music: OFF</button>
+            <button id="music-toggle-btn" class="inactive" type="button" title="Music: off" aria-label="Music" aria-pressed="false">&#9834;</button>
         </div>
     </header>
 

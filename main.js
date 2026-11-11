@@ -25,6 +25,12 @@ const CONFIG = {
 
 const limitar = (valor, min, max) => Math.min(Math.max(valor, min), max);
 
+// 78 секунд → "1:18"
+const formatearTiempo = (segundos) => {
+    const total = Math.floor(segundos);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
+
 // Звук монетки один на всю игру вместо 20 копий одного файла
 const sonidoMoneda = new Audio('./public/sounds/coin.wav');
 sonidoMoneda.volume = 0.2;
@@ -280,6 +286,8 @@ class Game {
     constructor() {
         this.container = document.getElementById("game-container");
         this.scoreElement = document.getElementById("score");
+        this.playerLabel = document.getElementById("player-label");
+        this.timerElement = document.getElementById("timer");
         this.livesElement = document.getElementById("lives");
         this.overlay = document.getElementById("win-overlay");
         this.winWindow = document.querySelector(".win-message");
@@ -366,8 +374,7 @@ class Game {
 
         if (esPortraitMovil && !this.backgroundMusic.paused) {
             this.backgroundMusic.pause();
-            this.musicToggleBtn.textContent = "Music: OFF";
-            this.musicToggleBtn.classList.add("inactive");
+            this.marcarMusica(false);
         }
     }
 
@@ -375,8 +382,7 @@ class Game {
         const playerNameInput = document.getElementById("player-name-input");
         this.playerName = playerNameInput.value || "Player";
 
-        document.getElementById("score-container").style.display = "block";
-        this.livesElement.style.display = "block";
+        document.getElementById("score-container").style.display = "flex";
         this.gameControls.style.display = this.esTactil ? "flex" : "none";
         this.startOverlay.style.display = "none";
 
@@ -509,6 +515,7 @@ class Game {
             this.monedas.splice(i, 1);
             this.puntuacion++;
             this.updateScore();
+            this.animar(this.scoreElement, "recogida");
 
             sonidoMoneda.currentTime = 0;
             sonidoMoneda.play().catch(() => {});
@@ -551,27 +558,37 @@ class Game {
             "♥".repeat(this.vidas) +
             `<span class="perdida">${"♥".repeat(CONFIG.vidas - this.vidas)}</span>`;
 
-        if (!golpe) return;
-        this.livesElement.classList.remove("golpe");
-        void this.livesElement.offsetWidth; // перезапуск анимации
-        this.livesElement.classList.add("golpe");
+        if (golpe) this.animar(this.livesElement, "golpe");
     }
 
     updateScore() {
-        this.scoreElement.innerText =
-            `Player: ${this.playerName} | Stars: ${this.puntuacion}/${CONFIG.totalEstrellas} | Time: ${Math.floor(this.tiempo)}s`;
+        this.playerLabel.innerText = this.playerName;
+        this.scoreElement.innerText = `${this.puntuacion}/${CONFIG.totalEstrellas}`;
+        this.timerElement.innerText = formatearTiempo(this.tiempo);
+    }
+
+    // Перезапуск CSS-анимации: снять класс, дёрнуть reflow, повесить обратно
+    animar(elemento, clase) {
+        elemento.classList.remove(clase);
+        void elemento.offsetWidth;
+        elemento.classList.add(clase);
     }
 
     toggleMusic() {
         if (this.backgroundMusic.paused) {
             this.backgroundMusic.play();
-            this.musicToggleBtn.textContent = "Music: ON";
-            this.musicToggleBtn.classList.remove("inactive");
+            this.marcarMusica(true);
         } else {
             this.backgroundMusic.pause();
-            this.musicToggleBtn.textContent = "Music: OFF";
-            this.musicToggleBtn.classList.add("inactive");
+            this.marcarMusica(false);
         }
+    }
+
+    // Иконка ♪ остаётся на месте, меняется только состояние кнопки
+    marcarMusica(encendida) {
+        this.musicToggleBtn.classList.toggle("inactive", !encendida);
+        this.musicToggleBtn.setAttribute("aria-pressed", String(encendida));
+        this.musicToggleBtn.title = encendida ? "Music: on" : "Music: off";
     }
 
     terminarPartida(estado) {
