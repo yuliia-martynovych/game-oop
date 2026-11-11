@@ -1,213 +1,441 @@
-//Clases
+// Все позиции и размеры хранятся в долях игрового поля (0..1),
+// поэтому игра одинаково работает на любом размере контейнера.
+const CONFIG = {
+    totalEstrellas: 20,
+    velocidad: 0.55,          // ширина поля в секунду
+    gravedad: 3.0,            // высота поля в секунду²
+    saltoNormal: 1.45,        // начальная скорость: ~35% высоты поля
+    saltoAlto: 1.9,           // начальная скорость: ~60% высоты поля
+    anchoPersonaje: 0.12,     // доля ширины поля
+    proporcionPersonaje: 0.7, // высота/ширина спрайта
+    tamanoMoneda: 0.038,      // доля ширины поля
+    margenSuelo: 0.04,
+    hitbox: 0.8,              // коллизия чуть меньше спрайта — так честнее
+};
 
-class Game { 
+const limitar = (valor, min, max) => Math.min(Math.max(valor, min), max);
+
+// Сонид монетки один на всю игру вместо 20 копий одного файла
+const sonidoMoneda = new Audio('./public/sounds/coin.wav');
+sonidoMoneda.volume = 0.2;
+
+// Набор нажатых клавиш + разовые нажатия (для прыжка)
+class Input {
+    constructor() {
+        this.activas = new Set();
+        this.pulsadas = new Set();
+
+        this.teclas = {
+            ArrowLeft: "izquierda",
+            ArrowRight: "derecha",
+            ArrowUp: "salto",
+            " ": "saltoAlto",
+        };
+
+        window.addEventListener("keydown", (e) => {
+            // Не перехватываем клавиши, пока игрок печатает имя
+            if (e.target.tagName === "INPUT") return;
+            const accion = this.teclas[e.key];
+            if (!accion) return;
+            e.preventDefault();
+            if (!e.repeat) this.pulsadas.add(accion);
+            this.activas.add(accion);
+        });
+
+        window.addEventListener("keyup", (e) => {
+            const accion = this.teclas[e.key];
+            if (accion) this.activas.delete(accion);
+        });
+
+        // Если вкладка теряет фокус, клавиши "залипают" — сбрасываем
+        window.addEventListener("blur", () => this.reiniciar());
+    }
+
+    // Кнопки на экране: нажатие и отпускание как у настоящей клавиши
+    conectarBoton(id, accion) {
+        const boton = document.getElementById(id);
+        const presionar = (e) => {
+            e.preventDefault();
+            this.pulsadas.add(accion);
+            this.activas.add(accion);
+        };
+        const soltar = () => this.activas.delete(accion);
+
+        boton.addEventListener("touchstart", presionar, { passive: false });
+        boton.addEventListener("mousedown", presionar);
+        boton.addEventListener("touchend", soltar);
+        boton.addEventListener("touchcancel", soltar);
+        boton.addEventListener("mouseup", soltar);
+        boton.addEventListener("mouseleave", soltar);
+    }
+
+    activa(accion) {
+        return this.activas.has(accion);
+    }
+
+    // true только один раз на каждое нажатие
+    pulsada(accion) {
+        if (!this.pulsadas.has(accion)) return false;
+        this.pulsadas.delete(accion);
+        return true;
+    }
+
+    limpiarPulsaciones() {
+        this.pulsadas.clear();
+    }
+
+    reiniciar() {
+        this.activas.clear();
+        this.pulsadas.clear();
+    }
+}
+
+class Personaje {
+    constructor(game) {
+        this.game = game;
+        this.element = document.createElement("div");
+        this.element.classList.add("personaje");
+        this.reiniciar();
+    }
+
+    reiniciar() {
+        this.x = 0.05;
+        this.vy = 0;
+        this.enSuelo = true;
+        this.y = this.suelo;
+    }
+
+    get anchoPx() {
+        return this.game.ancho * CONFIG.anchoPersonaje;
+    }
+
+    get altoPx() {
+        return this.anchoPx * CONFIG.proporcionPersonaje;
+    }
+
+    get altoFrac() {
+        return this.altoPx / this.game.alto;
+    }
+
+    // Верхняя координата персонажа, когда он стоит на земле
+    get suelo() {
+        return 1 - CONFIG.margenSuelo - this.altoFrac;
+    }
+
+    actualizar(dt, input) {
+        let direccion = 0;
+        if (input.activa("izquierda")) direccion -= 1;
+        if (input.activa("derecha")) direccion += 1;
+
+        this.x += direccion * CONFIG.velocidad * dt;
+        this.x = limitar(this.x, 0, 1 - CONFIG.anchoPersonaje);
+
+        if (this.enSuelo) {
+            if (input.pulsada("saltoAlto")) this.saltar(CONFIG.saltoAlto);
+            else if (input.pulsada("salto")) this.saltar(CONFIG.saltoNormal);
+        }
+
+        this.vy += CONFIG.gravedad * dt;
+        this.y += this.vy * dt;
+
+        const suelo = this.suelo;
+        if (this.y >= suelo) {
+            this.y = suelo;
+            this.vy = 0;
+            this.enSuelo = true;
+        } else if (this.y < 0) {
+            this.y = 0;
+            this.vy = 0;
+        }
+    }
+
+    saltar(impulso) {
+        this.vy = -impulso;
+        this.enSuelo = false;
+    }
+
+    dibujar() {
+        const ancho = this.anchoPx;
+        const alto = this.altoPx;
+        this.element.style.width = `${ancho}px`;
+        this.element.style.height = `${alto}px`;
+        this.element.style.left = `${this.x * this.game.ancho}px`;
+        this.element.style.top = `${this.y * this.game.alto}px`;
+    }
+
+    // Прямоугольник в пикселях, слегка уменьшенный относительно спрайта
+    get caja() {
+        const ancho = this.anchoPx * CONFIG.hitbox;
+        const alto = this.altoPx * CONFIG.hitbox;
+        return {
+            x: this.x * this.game.ancho + (this.anchoPx - ancho) / 2,
+            y: this.y * this.game.alto + (this.altoPx - alto) / 2,
+            ancho,
+            alto,
+        };
+    }
+
+    colisionaCon(objeto) {
+        const a = this.caja;
+        const b = objeto.caja;
+        return (
+            a.x < b.x + b.ancho &&
+            a.x + a.ancho > b.x &&
+            a.y < b.y + b.alto &&
+            a.y + a.alto > b.y
+        );
+    }
+}
+
+class Moneda {
+    constructor(game, x, y) {
+        this.game = game;
+        this.x = x;
+        this.y = y;
+        this.element = document.createElement("div");
+        this.element.classList.add("moneda");
+        this.dibujar();
+    }
+
+    get tamanoPx() {
+        return this.game.ancho * CONFIG.tamanoMoneda;
+    }
+
+    get anchoFrac() {
+        return CONFIG.tamanoMoneda;
+    }
+
+    get altoFrac() {
+        return this.tamanoPx / this.game.alto;
+    }
+
+    dibujar() {
+        const tamano = this.tamanoPx;
+        this.element.style.width = `${tamano}px`;
+        this.element.style.height = `${tamano}px`;
+        this.element.style.left = `${this.x * this.game.ancho}px`;
+        this.element.style.top = `${this.y * this.game.alto}px`;
+    }
+
+    get caja() {
+        return {
+            x: this.x * this.game.ancho,
+            y: this.y * this.game.alto,
+            ancho: this.tamanoPx,
+            alto: this.tamanoPx,
+        };
+    }
+}
+
+class Game {
     constructor() {
         this.container = document.getElementById("game-container");
         this.scoreElement = document.getElementById("score");
-        this.personaje = null;
-        this.monedas = [];
-        this.puntuacion = 0;
-        this.timer = 0;
-        this.timerInterval = null;
-        this.playerName = "";
-        this.gameStarted = false;
-        this.isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1366);
-        this.isPortrait = window.innerHeight > window.innerWidth;
-        this.isTablet = /iPad|Android.*Tablet|Tablet/.test(navigator.userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024 && !/iPhone/.test(navigator.userAgent));
-        
-        // Отладочная информация
-        console.log('Device detection:', {
-            userAgent: navigator.userAgent,
-            screenWidth: window.innerWidth,
-            screenHeight: window.innerHeight,
-            isMobile: this.isMobile,
-            isTablet: this.isTablet,
-            isPortrait: this.isPortrait
-        });
-
-        // Создаем персонажа
-        this.personaje = new Personaje(this);
-        this.container.appendChild(this.personaje.element);
-        
-        this.crearEscenario();
-        this.agregarEventos();
-
         this.overlay = document.getElementById("win-overlay");
         this.startOverlay = document.getElementById("start-overlay");
-        this.startBtn = document.getElementById("start-btn");
-        this.restartBtn = document.getElementById("restart-btn");
+        this.gameControls = document.getElementById("game-controls");
+        this.rotateOverlay = document.getElementById("rotate-phone-overlay");
+
+        this.monedas = [];
+        this.puntuacion = 0;
+        this.tiempo = 0;
+        this.segundosMostrados = -1;
+        this.playerName = "";
+        this.estado = "inicio"; // inicio | jugando | ganado
+        this.rafId = null;
+        this.ultimoFrame = 0;
+
+        this.esTactil = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+        this.input = new Input();
+        this.input.conectarBoton("left-btn", "izquierda");
+        this.input.conectarBoton("right-btn", "derecha");
+        this.input.conectarBoton("up-btn", "salto");
+        this.input.conectarBoton("space-btn", "saltoAlto");
+
+        this.personaje = new Personaje(this);
+        this.container.appendChild(this.personaje.element);
+
         this.celebrationSound = new Audio('./public/sounds/fanfare.mp3');
         this.celebrationSound.volume = 0.2;
 
-        this.startBtn.addEventListener("click", () => this.startGame());
-        
-
         this.backgroundMusic = new Audio('./public/sounds/background-music-mini.mp3');
-        this.backgroundMusic.loop = true; 
-        this.backgroundMusic.volume = 0.2; 
-        // Music is OFF by default - don't play automatically
-        // this.backgroundMusic.play()
+        this.backgroundMusic.loop = true;
+        this.backgroundMusic.volume = 0.2;
 
-        // Background music button
         this.musicToggleBtn = document.getElementById("music-toggle-btn");
         this.musicToggleBtn.addEventListener("click", () => this.toggleMusic());
 
+        document.getElementById("start-btn").addEventListener("click", () => this.startGame());
+        document.getElementById("restart-btn").addEventListener("click", () => this.reiniciarJuego());
 
+        // Поле резиновое: позиции в долях, поэтому достаточно перерисовать
+        window.addEventListener("resize", () => this.alCambiarTamano());
+        window.addEventListener("orientationchange", () => {
+            setTimeout(() => this.alCambiarTamano(), 100);
+        });
 
-        this.restartBtn.addEventListener("click", () => this.reiniciarJuego());
-        this.gameStarted = false;
-        
-        // Add orientation change handler
-        window.addEventListener('orientationchange', () => {
-            setTimeout(() => {
-                this.handleOrientationChange();
-            }, 100);
-        });
-        
-        // Add resize handler
-        window.addEventListener('resize', () => {
-            this.isMobile = /Mobi|Android|iPhone|iPad|iPod|Touch/.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1366);
-            this.isPortrait = window.innerHeight > window.innerWidth;
-            this.isTablet = /iPad|Android.*Tablet|Tablet/.test(navigator.userAgent) || (window.innerWidth > 768 && window.innerWidth <= 1024 && !/iPhone/.test(navigator.userAgent));
-            this.handleOrientationChange();
-            this.actualizarTamanos();
-        });
-        
-        // Initial orientation check
+        this.alCambiarTamano();
+    }
+
+    // || 1 — страховка от деления на ноль, если поле ещё не разложилось
+    get ancho() {
+        return this.container.offsetWidth || 1;
+    }
+
+    get alto() {
+        return this.container.offsetHeight || 1;
+    }
+
+    alCambiarTamano() {
         this.handleOrientationChange();
-    } 
-    
-    handleOrientationChange() {
-        const rotateOverlay = document.getElementById('rotate-phone-overlay');
-        const isMobilePortrait = this.isMobile && this.isPortrait;
-        
-        if (isMobilePortrait) {
-            // Show rotate overlay for mobile portrait
-            rotateOverlay.style.display = 'flex';
-            // Pause music if playing
-            if (!this.backgroundMusic.paused) {
-                this.backgroundMusic.pause();
-                this.musicToggleBtn.textContent = "Music: OFF";
-                this.musicToggleBtn.classList.add("inactive");
-            }
-        } else {
-            // Hide rotate overlay for landscape or desktop
-            rotateOverlay.style.display = 'none';
-        }
-    }
-    
-    actualizarTamanos() {
-        // Обновляем размеры персонажа и монет в зависимости от размера экрана
-        if (this.personaje) {
-            if (this.isMobile && !this.isTablet) {
-                // Мобильные телефоны
-                this.personaje.width = 40;
-                this.personaje.height = 28;
-                // Обновляем размеры контейнера для персонажа
-                this.personaje.containerWidth = this.container.offsetWidth;
-                this.personaje.containerHeight = this.container.offsetHeight;
-            } else if (this.isTablet) {
-                // Планшеты - больший размер котика
-                this.personaje.width = 70;
-                this.personaje.height = 50;
-                // Обновляем размеры контейнера для персонажа
-                this.personaje.containerWidth = this.container.offsetWidth;
-                this.personaje.containerHeight = this.container.offsetHeight;
-            } else {
-                // Десктоп
-                this.personaje.width = 100;
-                this.personaje.height = 70;
-            }
-        }
-        
-        this.monedas.forEach(moneda => {
-            if (this.isMobile && !this.isTablet) {
-                // Мобильные телефоны
-                moneda.width = 15;
-                moneda.height = 15;
-                
-                // Перераспределяем звездочки по всей доступной высоте
-                const catStartY = this.container.offsetHeight - 100;
-                const minStarY = 60;
-                const maxStarY = catStartY - 40;
-                
-                // Если звездочка находится вне допустимого диапазона, перемещаем её
-                if (moneda.y < minStarY || moneda.y > maxStarY) {
-                    moneda.y = Math.random() * (maxStarY - minStarY) + minStarY;
-                    moneda.actualizarPosicion();
-                }
-            } else if (this.isTablet) {
-                // Планшеты - больший размер звездочек
-                moneda.width = 25;
-                moneda.height = 25;
-                
-                // Перераспределяем звездочки для планшетов
-                const catStartY = this.container.offsetHeight - 100;
-                const minStarY = 50;
-                const maxStarY = catStartY - 80; // Учитываем высоту прыжка
-                
-                // Если звездочка находится вне допустимого диапазона, перемещаем её
-                if (moneda.y < minStarY || moneda.y > maxStarY) {
-                    moneda.y = Math.random() * (maxStarY - minStarY) + minStarY;
-                    moneda.actualizarPosicion();
-                }
-            } else {
-                // Десктоп
-                moneda.width = 30;
-                moneda.height = 30;
-            }
-            moneda.actualizarPosicion();
+
+        // Размеры поля изменились — пересчитываем границы и перерисовываем
+        this.personaje.x = limitar(this.personaje.x, 0, 1 - CONFIG.anchoPersonaje);
+        if (this.personaje.enSuelo) this.personaje.y = this.personaje.suelo;
+        this.personaje.dibujar();
+
+        this.monedas.forEach((moneda) => {
+            moneda.x = limitar(moneda.x, 0, 1 - moneda.anchoFrac);
+            moneda.y = limitar(moneda.y, 0, 1 - moneda.altoFrac);
+            moneda.dibujar();
         });
     }
-    
+
+    handleOrientationChange() {
+        const esPortraitMovil = this.esTactil && window.innerHeight > window.innerWidth;
+        this.rotateOverlay.style.display = esPortraitMovil ? "flex" : "none";
+
+        if (esPortraitMovil && !this.backgroundMusic.paused) {
+            this.backgroundMusic.pause();
+            this.musicToggleBtn.textContent = "Music: OFF";
+            this.musicToggleBtn.classList.add("inactive");
+        }
+    }
+
     startGame() {
         const playerNameInput = document.getElementById("player-name-input");
-        this.playerName = playerNameInput.value || "Player"; 
-        
-        // Show score container and update score
-        const scoreContainer = document.getElementById("score-container");
-        scoreContainer.style.display = "block";
-        this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
+        this.playerName = playerNameInput.value || "Player";
 
-        // Show game controls only on mobile devices
-        const gameControls = document.getElementById("game-controls");
-        if (this.isMobile) {
-            gameControls.style.display = "flex";
-        } else {
-            gameControls.style.display = "none";
+        document.getElementById("score-container").style.display = "block";
+        this.gameControls.style.display = this.esTactil ? "flex" : "none";
+        this.startOverlay.style.display = "none";
+
+        this.nuevaPartida();
+    }
+
+    reiniciarJuego() {
+        this.overlay.style.display = 'none';
+        this.nuevaPartida();
+    }
+
+    nuevaPartida() {
+        this.limpiarEscenario();
+        this.puntuacion = 0;
+        this.tiempo = 0;
+        this.segundosMostrados = -1;
+        this.personaje.reiniciar();
+        this.personaje.dibujar();
+        this.crearEscenario();
+        this.updateScore();
+
+        this.input.reiniciar();
+        this.estado = "jugando";
+        this.iniciarBucle();
+    }
+
+    limpiarEscenario() {
+        this.monedas.forEach((moneda) => moneda.element.remove());
+        this.monedas = [];
+    }
+
+    crearEscenario() {
+        const suelo = this.personaje.suelo;
+        const alcance = CONFIG.saltoAlto ** 2 / (2 * CONFIG.gravedad); // высота высокого прыжка
+
+        // Звёзды только там, куда котик реально допрыгнет
+        const minY = Math.max(0.06, suelo - alcance * 0.92);
+        const maxY = Math.min(suelo + this.personaje.altoFrac * 0.5, 1 - CONFIG.tamanoMoneda);
+        const maxX = 1 - CONFIG.tamanoMoneda - 0.03;
+
+        for (let i = 0; i < CONFIG.totalEstrellas; i++) {
+            const posicion = this.buscarPosicionLibre(0.03, maxX, minY, maxY);
+            const moneda = new Moneda(this, posicion.x, posicion.y);
+            this.monedas.push(moneda);
+            this.container.appendChild(moneda.element);
+        }
+    }
+
+    // Несколько попыток, чтобы звёзды не слипались в кучу
+    buscarPosicionLibre(minX, maxX, minY, maxY) {
+        let candidato;
+        for (let intento = 0; intento < 12; intento++) {
+            candidato = {
+                x: Math.random() * (maxX - minX) + minX,
+                y: Math.random() * (maxY - minY) + minY,
+            };
+            // Не ставим звезду на место старта котика — иначе она засчитается сразу
+            const lejosDelInicio =
+                Math.hypot(this.personaje.x - candidato.x, this.personaje.y - candidato.y) > 0.18;
+            const libre = this.monedas.every((moneda) => {
+                return Math.hypot(moneda.x - candidato.x, moneda.y - candidato.y) > 0.08;
+            });
+            if (libre && lejosDelInicio) break;
+        }
+        return candidato;
+    }
+
+    iniciarBucle() {
+        cancelAnimationFrame(this.rafId);
+        this.ultimoFrame = performance.now();
+        this.rafId = requestAnimationFrame((ts) => this.bucle(ts));
+    }
+
+    bucle(ts) {
+        // Ограничиваем dt: после сворачивания вкладки кадр может быть очень длинным
+        const dt = Math.min((ts - this.ultimoFrame) / 1000, 0.05);
+        this.ultimoFrame = ts;
+
+        this.personaje.actualizar(dt, this.input);
+        this.personaje.dibujar();
+        this.revisarColisiones();
+        this.input.limpiarPulsaciones();
+
+        this.tiempo += dt;
+        const segundos = Math.floor(this.tiempo);
+        if (segundos !== this.segundosMostrados) {
+            this.segundosMostrados = segundos;
+            this.updateScore();
         }
 
-        this.startOverlay.style.display = "none"; 
-        // Don't automatically play music when game starts
-        // this.backgroundMusic.play();
-        
-        this.agregarEventos();
-        this.startTimer(); 
-        this.gameStarted = true;
-        this.actualizarTamanos();
-    }
-    
-    handleKeydown(event) {
-        if (!this.gameStarted) return;  
-        
-        this.personaje.mover(event);
-        
-    }
-    
-    startTimer() {
-        this.timer = 0;
-        this.timerInterval = setInterval(() => {
-            this.timer++;
-            this.updateScore();
-        }, 1000);
+        if (this.estado === "jugando") {
+            this.rafId = requestAnimationFrame((t) => this.bucle(t));
+        }
     }
 
-    stopTimer() {
-        clearInterval(this.timerInterval);
+    revisarColisiones() {
+        // Идём с конца, чтобы удаление не пропускало следующий элемент
+        for (let i = this.monedas.length - 1; i >= 0; i--) {
+            const moneda = this.monedas[i];
+            if (!this.personaje.colisionaCon(moneda)) continue;
+
+            moneda.element.remove();
+            this.monedas.splice(i, 1);
+            this.puntuacion++;
+            this.updateScore();
+
+            sonidoMoneda.currentTime = 0;
+            sonidoMoneda.play().catch(() => {});
+        }
+
+        if (this.monedas.length === 0 && this.estado === "jugando") {
+            this.mostrarVentanaGanadora();
+        }
     }
 
     updateScore() {
-        this.scoreElement.innerText = `Player: ${this.playerName} | Stars: ${this.puntuacion}/20 | Time: ${this.timer}s`;
+        this.scoreElement.innerText =
+            `Player: ${this.playerName} | Stars: ${this.puntuacion}/${CONFIG.totalEstrellas} | Time: ${Math.floor(this.tiempo)}s`;
     }
 
     toggleMusic() {
@@ -217,434 +445,19 @@ class Game {
             this.musicToggleBtn.classList.remove("inactive");
         } else {
             this.backgroundMusic.pause();
-            this.musicToggleBtn.textContent = "Music: OFF"; 
+            this.musicToggleBtn.textContent = "Music: OFF";
             this.musicToggleBtn.classList.add("inactive");
         }
     }
 
-    crearEscenario() {    
-        // Создаем только звездочки, персонаж создается отдельно
-        for (let i = 0; i < 20; i++){
-            const moneda = new Moneda(this);
-            this.monedas.push(moneda);
-            this.container.appendChild(moneda.element);
-        }
-    }
-    
-    agregarEventos() {
-        // Удаляем старые обработчики клавиатуры, если они есть
-        if (this.handleKeydown) {
-            window.removeEventListener("keydown", this.handleKeydown);
-        }
-        
-        // Создаем новый обработчик клавиатуры
-        this.handleKeydown = (e) => {
-            if (this.personaje && this.gameStarted) {
-                this.personaje.mover(e);
-            }
-        };
-        window.addEventListener("keydown", this.handleKeydown, { passive: true });
-        
-        // Сенсорные события для мобильных устройств
-        if (this.isMobile) {
-            this.agregarEventosTactiles();
-        }
-        
-        this.checkColisiones();
-    }
-    
-    agregarEventosTactiles() {
-        // Обработчики для кнопок управления
-        const leftBtn = document.getElementById('left-btn');
-        const rightBtn = document.getElementById('right-btn');
-        const upBtn = document.getElementById('up-btn');
-        const spaceBtn = document.getElementById('space-btn');
-        
-        // Удаляем старые обработчики, если они есть
-        if (this.touchHandlers) {
-            leftBtn.removeEventListener('touchstart', this.touchHandlers.leftTouch);
-            rightBtn.removeEventListener('touchstart', this.touchHandlers.rightTouch);
-            upBtn.removeEventListener('touchstart', this.touchHandlers.upTouch);
-            spaceBtn.removeEventListener('touchstart', this.touchHandlers.spaceTouch);
-            leftBtn.removeEventListener('click', this.touchHandlers.leftClick);
-            rightBtn.removeEventListener('click', this.touchHandlers.rightClick);
-            upBtn.removeEventListener('click', this.touchHandlers.upClick);
-            spaceBtn.removeEventListener('click', this.touchHandlers.spaceClick);
-        }
-        
-        // Создаем новые обработчики
-        this.touchHandlers = {
-            leftTouch: (e) => {
-                e.preventDefault();
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-                window.dispatchEvent(event);
-            },
-            rightTouch: (e) => {
-                e.preventDefault();
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-                window.dispatchEvent(event);
-            },
-            upTouch: (e) => {
-                e.preventDefault();
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
-                window.dispatchEvent(event);
-            },
-            spaceTouch: (e) => {
-                e.preventDefault();
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: ' ' });
-                window.dispatchEvent(event);
-            },
-            leftClick: () => {
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-                window.dispatchEvent(event);
-            },
-            rightClick: () => {
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: 'ArrowRight' });
-                window.dispatchEvent(event);
-            },
-            upClick: () => {
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
-                window.dispatchEvent(event);
-            },
-            spaceClick: () => {
-                if (!this.gameStarted) return;
-                const event = new KeyboardEvent('keydown', { key: ' ' });
-                window.dispatchEvent(event);
-            }
-        };
-        
-        // Добавляем новые обработчики с passive для улучшения производительности
-        leftBtn.addEventListener('touchstart', this.touchHandlers.leftTouch, { passive: false });
-        rightBtn.addEventListener('touchstart', this.touchHandlers.rightTouch, { passive: false });
-        upBtn.addEventListener('touchstart', this.touchHandlers.upTouch, { passive: false });
-        spaceBtn.addEventListener('touchstart', this.touchHandlers.spaceTouch, { passive: false });
-        
-        // Также добавляем обработчики для кликов (для устройств с мышью)
-        leftBtn.addEventListener('click', this.touchHandlers.leftClick);
-        rightBtn.addEventListener('click', this.touchHandlers.rightClick);
-        upBtn.addEventListener('click', this.touchHandlers.upClick);
-        spaceBtn.addEventListener('click', this.touchHandlers.spaceClick);
-    }
-    
-    checkColisiones() {
-        setInterval(() => {
-            this.monedas.forEach((moneda, index) => {
-                if (this.personaje.colisionaCon(moneda)) {
-                    this.container.removeChild(moneda.element);
-                    this.monedas.splice(index, 1);
-    
-                    moneda.coinSound.play();
-                    this.puntuacion++;
-                    this.updateScore();
-                    if (this.monedas.length === 0) {
-                        this.mostrarVentanaGanadora();
-                    }
-                }
-            })
-        }, 100);
-    }
-    
     mostrarVentanaGanadora() {
-        this.celebrationSound.play();
-        this.stopTimer();
+        this.estado = "ganado";
+        cancelAnimationFrame(this.rafId);
+        this.celebrationSound.play().catch(() => {});
+
+        document.getElementById('win-message').innerText = `Congratulations, ${this.playerName}!`;
+        document.getElementById('win-time').innerText = `Your time: ${Math.floor(this.tiempo)}s`;
         this.overlay.style.display = 'flex';
-        const winMessage = document.getElementById('win-message');
-        const winTime = document.getElementById('win-time');
-        winMessage.innerText = `Congratulations, ${this.playerName}!`;
-        winTime.innerText = `Your time: ${this.timer}s`; 
-        this.gameStarted = false;
-
-    }
-
-    reiniciarJuego() {
-        console.log('Reiniciando juego...');
-        this.overlay.style.display = 'none'; 
-        this.container.innerHTML = ''; 
-        this.monedas = []; 
-        this.puntuacion = 0; 
-        this.stopTimer();
-        this.startTimer(); 
-        this.scoreElement.innerText = `Player: ${this.playerName} | Stars: 0/20 | Time: 0s`;
-        
-        // Создаем нового персонажа
-        this.personaje = new Personaje(this);
-        this.container.appendChild(this.personaje.element);
-        console.log('Nuevo personaje creado:', this.personaje);
-        
-        // Создаем новые звездочки
-        this.crearEscenario(); 
-        this.updateScore();
-        this.actualizarTamanos();
-        
-        // Пересоздаем обработчики событий
-        this.agregarEventos();
-        
-        // Устанавливаем флаг, что игра запущена
-        this.gameStarted = true;
-        console.log('Juego reiniciado, gameStarted:', this.gameStarted);
-        
-        // Убеждаемся, что кнопки управления видимы только на мобильных устройствах
-        const gameControls = document.getElementById("game-controls");
-        if (this.isMobile) {
-            gameControls.style.display = "flex";
-        } else {
-            gameControls.style.display = "none";
-        }
-    }
-}
-
-
-
-class Personaje {
-    constructor(game) {
-        this.game = game;
-        // Получаем размеры контейнера для правильного позиционирования
-        const container = document.getElementById("game-container");
-        this.containerWidth = container.offsetWidth;
-        this.containerHeight = container.offsetHeight;
-        
-        // Устанавливаем начальную позицию в зависимости от устройства
-        if (this.game.isMobile && !this.game.isTablet) {
-            // Мобильные телефоны
-            this.x = 50;
-            this.y = this.containerHeight - 100; // Размещаем персонажа внизу экрана
-            this.startY = this.y; // Сохраняем стартовую позицию
-        } else if (this.game.isTablet) {
-            // Планшеты
-            this.x = 50;
-            this.y = this.containerHeight - 120; // Размещаем персонажа чуть выше для планшетов
-            this.startY = this.y; // Сохраняем стартовую позицию
-        } else {
-            // Десктоп
-            this.x = 50;
-            this.y = 300;
-            this.startY = this.y; // Сохраняем стартовую позицию
-        }
-        
-        this.width = 100;
-        this.height = 100;
-        this.velocidad = 10;
-        this.saltando = false;
-        this.element = document.createElement("div");
-        this.element.classList.add("personaje");
-        this.actualizarPosicion();
-    }
-    
-    mover(evento) {
-        if (!this.game.gameStarted) return;  
-        
-        // Обновляем размеры контейнера
-        this.containerWidth = document.getElementById("game-container").offsetWidth;
-        this.containerHeight = document.getElementById("game-container").offsetHeight;
-
-        if (evento.key === "ArrowRight") {
-            if (this.x + this.width < this.containerWidth) {
-                this.x += this.velocidad;
-            }
-        } else if (evento.key === "ArrowLeft") {
-            if (this.x > 0) {
-                this.x -= this.velocidad;
-            }
-        } else if (evento.key === "ArrowUp" && !this.saltando) {
-            this.saltar();
-        } else if (evento.key === " " && !this.saltando) {
-            this.saltarAlto();
-        }
-        
-        // Ограничиваем позицию котика в зависимости от устройства
-        if (this.game.isMobile && !this.game.isTablet) {
-            // Мобильные телефоны
-            if (this.y > this.startY) {
-                this.y = this.startY;
-            }
-            
-            const maxHeight = this.startY - 90; // Новая максимальная высота для мобильных
-            if (this.y < maxHeight) {
-                this.y = maxHeight;
-            }
-        } else if (this.game.isTablet) {
-            // Планшеты - больший диапазон движения
-            if (this.y > this.startY) {
-                this.y = this.startY;
-            }
-            
-            const maxHeight = this.startY - 270; // Увеличили высоту для планшетов
-            if (this.y < maxHeight) {
-                this.y = maxHeight;
-            }
-        }
-        
-        // Отладочная информация для мобильных устройств
-        if (this.game.isMobile && !this.game.isTablet) {
-            console.log('Mobile movement - Y:', this.y, 'StartY:', this.startY, 'MaxHeight:', this.startY - 30);
-        } else if (this.game.isTablet) {
-            console.log('Tablet movement - Y:', this.y, 'StartY:', this.startY, 'MaxHeight:', this.startY - 270);
-        }
-        
-        this.actualizarPosicion();
-    }
-    
-    saltar() {
-        this.saltando = true;
-        // Ограничиваем высоту прыжка в зависимости от устройства
-        let alturaMaxima;
-        if (this.game.isMobile && !this.game.isTablet) {
-            // На мобильных телефонах ограничиваем прыжок
-            const maxJumpHeight = 45;
-            alturaMaxima = this.y - maxJumpHeight;
-            console.log('Mobile jump:', maxJumpHeight, 'px', 'Current Y:', this.y, 'Target Y:', alturaMaxima);
-        } else if (this.game.isTablet) {
-            // На планшетах - большая высота прыжка
-            const maxJumpHeight = 120;
-            alturaMaxima = this.y - maxJumpHeight;
-            console.log('Tablet jump:', maxJumpHeight, 'px');
-        } else {
-            // На десктопе
-            alturaMaxima = this.y - 150;
-            console.log('Desktop jump: 150px');
-        }
-        
-        const salto = setInterval(() => {
-            if (this.y > alturaMaxima) {
-                this.y -= 15; // Увеличили скорость движения вверх
-            } else {
-                clearInterval(salto);
-                this.caer();
-            }
-            this.actualizarPosicion()
-        }, 20);
-    }
-
-    saltarAlto() {
-        this.saltando = true;
-        // Ограничиваем высоту высокого прыжка в зависимости от устройства
-        let alturaMaxima;
-        if (this.game.isMobile && !this.game.isTablet) {
-            // На мобильных телефонах ограничиваем высокий прыжок
-            const maxHighJumpHeight = 80; // Очень низкий высокий прыжок для мобильных
-            alturaMaxima = this.y - maxHighJumpHeight;
-            console.log('Mobile high jump:', maxHighJumpHeight, 'px', 'Current Y:', this.y, 'Target Y:', alturaMaxima);
-        } else if (this.game.isTablet) {
-            // На планшетах - большая высота высокого прыжка
-            const maxHighJumpHeight = 250;
-            alturaMaxima = this.y - maxHighJumpHeight;
-            console.log('Tablet high jump:', maxHighJumpHeight, 'px');
-        } else {
-            // На десктопе
-            alturaMaxima = this.y - 250;
-            console.log('Desktop high jump: 250px');
-        }
-        
-        const saltoAlto = setInterval(() => {
-            if (this.y > alturaMaxima) {
-                this.y -= 15; // Увеличили скорость движения вверх
-            } else {
-                clearInterval(saltoAlto);
-                this.caer();
-            }
-            this.actualizarPosicion()
-        }, 20);
-    }
-
-    caer() {
-        const gravedad = setInterval(() => {
-            // Определяем нижнюю границу в зависимости от устройства
-            let bottomLimit;
-            if (this.game.isMobile && !this.game.isTablet) {
-                // На мобильных телефонах котик не должен падать ниже стартовой позиции
-                bottomLimit = this.startY;
-            } else if (this.game.isTablet) {
-                // На планшетах котик не должен падать ниже стартовой позиции
-                bottomLimit = this.startY;
-            } else {
-                // На десктопе
-                bottomLimit = 300;
-            }
-            
-            if (this.y < bottomLimit) {
-                this.y += 10;
-            } else {
-                clearInterval(gravedad);
-                this.saltando = false;
-            }
-            this.actualizarPosicion();
-        }, 20);
-    }
-    
-    actualizarPosicion() {
-        this.element.style.left = `${this.x}px`;
-        this.element.style.top = `${this.y}px`;
-    }
-    
-   colisionaCon(objeto) {
-    return (
-      this.x < objeto.x + objeto.width &&
-      this.x + this.width > objeto.x &&
-      this.y < objeto.y + objeto.height &&
-      this.y + this.height > objeto.y
-    );
-}
-}
-
-class Moneda {
-    constructor(game) {
-        this.game = game;
-        // Получаем размеры контейнера для правильного размещения
-        const container = document.getElementById("game-container");
-        const containerWidth = container.offsetWidth;
-        const containerHeight = container.offsetHeight;
-        
-        // Генерируем позиции в зависимости от устройства
-        if (this.game.isMobile && !this.game.isTablet) {
-            // Для мобильных телефонов - распределяем звездочки по всей высоте, где котик может достать
-            this.x = Math.random() * (containerWidth - 60) + 30; // Оставляем отступы по краям
-            
-            // Определяем диапазон высоты для звездочек
-            const catStartY = containerHeight - 100; // Стартовая позиция котика
-            const maxJumpHeight = 45; // Максимальная высота прыжка котика
-            const minStarY = 60; // Минимальная высота для звездочек (от верха экрана)
-            const maxStarY = catStartY - 40; // Максимальная высота (учитываем высоту прыжка)
-            
-            // Распределяем звездочки равномерно по всей доступной высоте
-            this.y = Math.random() * (maxStarY - minStarY) + minStarY;
-        } else if (this.game.isTablet) {
-            // Для планшетов - распределяем звездочки с учетом большей высоты прыжка
-            this.x = Math.random() * (containerWidth - 80) + 40; // Оставляем отступы по краям
-            
-            // Определяем диапазон высоты для звездочек на планшетах
-            const catStartY = containerHeight - 100; // Стартовая позиция котика
-            const maxJumpHeight = 280; // Максимальная высота прыжка котика на планшетах
-            const minStarY = 50; // Минимальная высота для звездочек
-            const maxStarY = catStartY - 80; // Максимальная высота (учитываем высоту прыжка)
-            
-            // Распределяем звездочки равномерно по всей доступной высоте
-            this.y = Math.random() * (maxStarY - minStarY) + minStarY;
-        } else {
-            // Для десктопа - распределяем по всей высоте игрового поля
-            this.x = Math.random() * 700 + 50;
-            // Распределяем звездочки по всей высоте от 50 до 300 пикселей
-            this.y = Math.random() * 250 + 50;
-        }
-        
-        this.width = 30;
-        this.height = 30;
-        this.element = document.createElement("div");
-        this.element.classList.add("moneda");
-        this.coinSound = new Audio('./public/sounds/coin.wav');
-        this.actualizarPosicion();
-        this.coinSound.volume = 0.2;
-    }
-    
-    actualizarPosicion() {
-        this.element.style.left = `${this.x}px`;
-        this.element.style.top = `${this.y}px`;
     }
 }
 
