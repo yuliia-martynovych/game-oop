@@ -130,6 +130,42 @@ header h1 {
     background-color: #4a0e67;
 }
 
+/*Controls legend in the start window*/
+#controles {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(143, 22, 204, 0.2);
+    font-family: 'Poiret One', Arial, sans-serif;
+    font-size: 14px;
+    color: #6b6b6b;
+}
+
+#controles p {
+    margin: 6px 0;
+}
+
+#controles .tecla {
+    display: inline-block;
+    min-width: 20px;
+    margin: 0 3px;
+    padding: 1px 6px;
+    border: 1px solid #8f16cc;
+    border-radius: 4px;
+    color: #8f16cc;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+#controles .sep {
+    margin: 0 6px;
+    opacity: 0.45;
+}
+
+#controles .aviso {
+    margin-top: 10px;
+    color: #e2365f;
+}
+
 #score-container {
     font-size: 16px;
     padding: 2px 4px;
@@ -143,6 +179,33 @@ header h1 {
     line-height: 1.2;
     display: inline-block;
     font-family: 'Poiret', Arial, sans-serif;
+}
+
+#lives {
+    font-size: 16px;
+    padding: 2px 8px;
+    background-color: rgba(182, 98, 234, 0.9);
+    border-radius: 3px;
+    line-height: 1.2;
+    letter-spacing: 3px;
+    white-space: nowrap;
+    color: #fff;
+    font-family: 'Poiret', Arial, sans-serif;
+}
+
+#lives .perdida {
+    opacity: 0.3;
+}
+
+#lives.golpe {
+    animation: golpe 0.45s ease;
+}
+
+@keyframes golpe {
+    30% {
+        transform: scale(1.3);
+        background-color: #e2365f;
+    }
 }
 
 #game-info {
@@ -207,6 +270,76 @@ header h1 {
     animation: pulsar 1.5s infinite;
 }
 
+/*Speech bubble above the cat*/
+.bocadillo {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    margin-bottom: 10px;
+    padding: 3px 12px 5px;
+    background: #fff;
+    color: #8f16cc;
+    font-family: 'Princess Sofia', serif;
+    font-size: clamp(11px, 1.5vw, 17px);
+    line-height: 1.2;
+    white-space: nowrap;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    transform: translate(-50%, 0);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    animation: flotar 2.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/*Хвостик облачка*/
+.bocadillo::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border: 6px solid transparent;
+    border-top-color: #fff;
+}
+
+.bocadillo.oculto {
+    opacity: 0;
+    animation: none;
+    transform: translate(-50%, -8px) scale(0.9);
+}
+
+@keyframes flotar {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, -4px); }
+}
+
+/*Space junk falling from the top*/
+.meteorito {
+    position: absolute;
+    background-image: url('./public/images/trash.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    animation: balancear 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/*Длительность и фаза задаются в JS, чтобы обломки не качались в такт*/
+@keyframes balancear {
+    0%, 100% { transform: rotate(-14deg); }
+    50% { transform: rotate(14deg); }
+}
+
+/*Blink while invulnerable after a hit*/
+.personaje.invulnerable {
+    animation: parpadeo 0.3s steps(2, start) infinite;
+}
+
+@keyframes parpadeo {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+}
+
 /*Stars animation*/
 @keyframes pulsar {
     0% {
@@ -265,6 +398,10 @@ header h1 {
     margin-bottom: 20px;
     color: #8f16cc;
     font-size: 24px;
+}
+
+.win-message.derrota h2 {
+    color: #e2365f;
 }
 
 #win-time {

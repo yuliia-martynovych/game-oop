@@ -8,14 +8,24 @@ const CONFIG = {
     saltoAlto: 1.9,           // начальная скорость: ~60% высоты поля
     anchoPersonaje: 0.12,     // доля ширины поля
     proporcionPersonaje: 0.7, // высота/ширина спрайта
-    tamanoMoneda: 0.038,      // доля ширины поля
+    tamanoMoneda: 0.038,
     margenSuelo: 0.04,
-    hitbox: 0.8,              // коллизия чуть меньше спрайта — так честнее
+    hitboxPersonaje: 0.8,     // коллизия чуть меньше спрайта — так честнее
+
+    // Метеориты
+    vidas: 3,
+    tamanoMeteorito: 0.075,
+    velocidadMeteorito: 0.28,     // высота поля в секунду
+    hitboxMeteorito: 0.40,        // попадание засчитываем только по центру
+    meteoritosIniciales: 1,
+    estrellasPorMeteorito: 8,     // каждые N звёзд добавляется метеорит
+    invulnerabilidad: 1.5,        // секунд неуязвимости после удара
+    tiempoBocadillo: 5,           // через сколько секунд облачко уходит само
 };
 
 const limitar = (valor, min, max) => Math.min(Math.max(valor, min), max);
 
-// Сонид монетки один на всю игру вместо 20 копий одного файла
+// Звук монетки один на всю игру вместо 20 копий одного файла
 const sonidoMoneda = new Audio('./public/sounds/coin.wav');
 sonidoMoneda.volume = 0.2;
 
@@ -90,12 +100,92 @@ class Input {
     }
 }
 
-class Personaje {
-    constructor(game) {
+// Общий предок всего, что живёт на поле: позиция в долях, свой div и хитбокс
+class Entidad {
+    constructor(game, clase, { anchoFrac, proporcion = 1, hitbox = 1 }) {
         this.game = game;
+        this.anchoFrac = anchoFrac;
+        this.proporcion = proporcion;
+        this.hitbox = hitbox;
+        this.x = 0;
+        this.y = 0;
         this.element = document.createElement("div");
-        this.element.classList.add("personaje");
+        this.element.classList.add(clase);
+    }
+
+    get anchoPx() {
+        return this.game.ancho * this.anchoFrac;
+    }
+
+    get altoPx() {
+        return this.anchoPx * this.proporcion;
+    }
+
+    get altoFrac() {
+        return this.altoPx / this.game.alto;
+    }
+
+    dibujar() {
+        this.element.style.width = `${this.anchoPx}px`;
+        this.element.style.height = `${this.altoPx}px`;
+        this.element.style.left = `${this.x * this.game.ancho}px`;
+        this.element.style.top = `${this.y * this.game.alto}px`;
+    }
+
+    // Прямоугольник в пикселях, уменьшенный по hitbox относительно спрайта
+    get caja() {
+        const ancho = this.anchoPx * this.hitbox;
+        const alto = this.altoPx * this.hitbox;
+        return {
+            x: this.x * this.game.ancho + (this.anchoPx - ancho) / 2,
+            y: this.y * this.game.alto + (this.altoPx - alto) / 2,
+            ancho,
+            alto,
+        };
+    }
+
+    colisionaCon(otro) {
+        const a = this.caja;
+        const b = otro.caja;
+        return (
+            a.x < b.x + b.ancho &&
+            a.x + a.ancho > b.x &&
+            a.y < b.y + b.alto &&
+            a.y + a.alto > b.y
+        );
+    }
+
+    eliminar() {
+        this.element.remove();
+    }
+}
+
+class Personaje extends Entidad {
+    constructor(game) {
+        super(game, "personaje", {
+            anchoFrac: CONFIG.anchoPersonaje,
+            proporcion: CONFIG.proporcionPersonaje,
+            hitbox: CONFIG.hitboxPersonaje,
+        });
+
+        // Облачко — ребёнок котика, поэтому ездит за ним само
+        this.bocadillo = document.createElement("div");
+        this.bocadillo.classList.add("bocadillo");
+        this.bocadillo.innerText = "Let's go!";
+        this.element.appendChild(this.bocadillo);
+        this.bocadilloVisible = true;
+
         this.reiniciar();
+    }
+
+    mostrarBocadillo() {
+        this.bocadillo.classList.remove("oculto");
+        this.bocadilloVisible = true;
+    }
+
+    ocultarBocadillo() {
+        this.bocadillo.classList.add("oculto");
+        this.bocadilloVisible = false;
     }
 
     reiniciar() {
@@ -103,18 +193,6 @@ class Personaje {
         this.vy = 0;
         this.enSuelo = true;
         this.y = this.suelo;
-    }
-
-    get anchoPx() {
-        return this.game.ancho * CONFIG.anchoPersonaje;
-    }
-
-    get altoPx() {
-        return this.anchoPx * CONFIG.proporcionPersonaje;
-    }
-
-    get altoFrac() {
-        return this.altoPx / this.game.alto;
     }
 
     // Верхняя координата персонажа, когда он стоит на земле
@@ -128,7 +206,7 @@ class Personaje {
         if (input.activa("derecha")) direccion += 1;
 
         this.x += direccion * CONFIG.velocidad * dt;
-        this.x = limitar(this.x, 0, 1 - CONFIG.anchoPersonaje);
+        this.x = limitar(this.x, 0, 1 - this.anchoFrac);
 
         if (this.enSuelo) {
             if (input.pulsada("saltoAlto")) this.saltar(CONFIG.saltoAlto);
@@ -154,76 +232,47 @@ class Personaje {
         this.enSuelo = false;
     }
 
-    dibujar() {
-        const ancho = this.anchoPx;
-        const alto = this.altoPx;
-        this.element.style.width = `${ancho}px`;
-        this.element.style.height = `${alto}px`;
-        this.element.style.left = `${this.x * this.game.ancho}px`;
-        this.element.style.top = `${this.y * this.game.alto}px`;
-    }
-
-    // Прямоугольник в пикселях, слегка уменьшенный относительно спрайта
-    get caja() {
-        const ancho = this.anchoPx * CONFIG.hitbox;
-        const alto = this.altoPx * CONFIG.hitbox;
-        return {
-            x: this.x * this.game.ancho + (this.anchoPx - ancho) / 2,
-            y: this.y * this.game.alto + (this.altoPx - alto) / 2,
-            ancho,
-            alto,
-        };
-    }
-
-    colisionaCon(objeto) {
-        const a = this.caja;
-        const b = objeto.caja;
-        return (
-            a.x < b.x + b.ancho &&
-            a.x + a.ancho > b.x &&
-            a.y < b.y + b.alto &&
-            a.y + a.alto > b.y
-        );
+    // После удара метеоритом котика сбрасывает на землю
+    aterrizar() {
+        this.y = this.suelo;
+        this.vy = 0;
+        this.enSuelo = true;
     }
 }
 
-class Moneda {
+class Moneda extends Entidad {
     constructor(game, x, y) {
-        this.game = game;
+        super(game, "moneda", { anchoFrac: CONFIG.tamanoMoneda });
         this.x = x;
         this.y = y;
-        this.element = document.createElement("div");
-        this.element.classList.add("moneda");
+        this.dibujar();
+    }
+}
+
+class Meteorito extends Entidad {
+    constructor(game) {
+        super(game, "meteorito", {
+            anchoFrac: CONFIG.tamanoMeteorito,
+            hitbox: CONFIG.hitboxMeteorito,
+        });
+        // Разные длительность и фаза, иначе обломки качаются синхронно
+        this.element.style.animationDuration = `${1.6 + Math.random()}s`;
+        this.element.style.animationDelay = `-${Math.random() * 2}s`;
+        this.reaparecer(true);
+    }
+
+    // inicial: при старте разводим метеориты повыше, чтобы не прилетели разом
+    reaparecer(inicial = false) {
+        this.x = Math.random() * (1 - this.anchoFrac);
+        this.y = inicial ? -(Math.random() * 1.2 + 0.4) : -this.altoFrac;
+        this.velocidad = CONFIG.velocidadMeteorito * (0.8 + Math.random() * 0.4);
         this.dibujar();
     }
 
-    get tamanoPx() {
-        return this.game.ancho * CONFIG.tamanoMoneda;
-    }
-
-    get anchoFrac() {
-        return CONFIG.tamanoMoneda;
-    }
-
-    get altoFrac() {
-        return this.tamanoPx / this.game.alto;
-    }
-
-    dibujar() {
-        const tamano = this.tamanoPx;
-        this.element.style.width = `${tamano}px`;
-        this.element.style.height = `${tamano}px`;
-        this.element.style.left = `${this.x * this.game.ancho}px`;
-        this.element.style.top = `${this.y * this.game.alto}px`;
-    }
-
-    get caja() {
-        return {
-            x: this.x * this.game.ancho,
-            y: this.y * this.game.alto,
-            ancho: this.tamanoPx,
-            alto: this.tamanoPx,
-        };
+    actualizar(dt) {
+        this.y += this.velocidad * dt;
+        if (this.y > 1) this.reaparecer();
+        this.dibujar();
     }
 }
 
@@ -231,17 +280,22 @@ class Game {
     constructor() {
         this.container = document.getElementById("game-container");
         this.scoreElement = document.getElementById("score");
+        this.livesElement = document.getElementById("lives");
         this.overlay = document.getElementById("win-overlay");
+        this.winWindow = document.querySelector(".win-message");
         this.startOverlay = document.getElementById("start-overlay");
         this.gameControls = document.getElementById("game-controls");
         this.rotateOverlay = document.getElementById("rotate-phone-overlay");
 
         this.monedas = [];
+        this.meteoritos = [];
         this.puntuacion = 0;
+        this.vidas = CONFIG.vidas;
+        this.invulnerable = 0;
         this.tiempo = 0;
         this.segundosMostrados = -1;
         this.playerName = "";
-        this.estado = "inicio"; // inicio | jugando | ganado
+        this.estado = "inicio"; // inicio | jugando | ganado | perdido
         this.rafId = null;
         this.ultimoFrame = 0;
 
@@ -287,19 +341,23 @@ class Game {
         return this.container.offsetHeight || 1;
     }
 
+    get entidades() {
+        return [this.personaje, ...this.monedas, ...this.meteoritos];
+    }
+
     alCambiarTamano() {
         this.handleOrientationChange();
 
         // Размеры поля изменились — пересчитываем границы и перерисовываем
-        this.personaje.x = limitar(this.personaje.x, 0, 1 - CONFIG.anchoPersonaje);
+        this.personaje.x = limitar(this.personaje.x, 0, 1 - this.personaje.anchoFrac);
         if (this.personaje.enSuelo) this.personaje.y = this.personaje.suelo;
-        this.personaje.dibujar();
 
         this.monedas.forEach((moneda) => {
             moneda.x = limitar(moneda.x, 0, 1 - moneda.anchoFrac);
             moneda.y = limitar(moneda.y, 0, 1 - moneda.altoFrac);
-            moneda.dibujar();
         });
+
+        this.entidades.forEach((entidad) => entidad.dibujar());
     }
 
     handleOrientationChange() {
@@ -318,6 +376,7 @@ class Game {
         this.playerName = playerNameInput.value || "Player";
 
         document.getElementById("score-container").style.display = "block";
+        this.livesElement.style.display = "block";
         this.gameControls.style.display = this.esTactil ? "flex" : "none";
         this.startOverlay.style.display = "none";
 
@@ -332,12 +391,20 @@ class Game {
     nuevaPartida() {
         this.limpiarEscenario();
         this.puntuacion = 0;
+        this.vidas = CONFIG.vidas;
+        this.invulnerable = 0;
+        this.personaje.element.classList.remove("invulnerable");
         this.tiempo = 0;
         this.segundosMostrados = -1;
         this.personaje.reiniciar();
+        this.personaje.mostrarBocadillo();
         this.personaje.dibujar();
+
         this.crearEscenario();
+        for (let i = 0; i < CONFIG.meteoritosIniciales; i++) this.agregarMeteorito();
+
         this.updateScore();
+        this.actualizarVidas();
 
         this.input.reiniciar();
         this.estado = "jugando";
@@ -345,8 +412,10 @@ class Game {
     }
 
     limpiarEscenario() {
-        this.monedas.forEach((moneda) => moneda.element.remove());
+        this.monedas.forEach((moneda) => moneda.eliminar());
+        this.meteoritos.forEach((meteorito) => meteorito.eliminar());
         this.monedas = [];
+        this.meteoritos = [];
     }
 
     crearEscenario() {
@@ -385,6 +454,12 @@ class Game {
         return candidato;
     }
 
+    agregarMeteorito() {
+        const meteorito = new Meteorito(this);
+        this.meteoritos.push(meteorito);
+        this.container.appendChild(meteorito.element);
+    }
+
     iniciarBucle() {
         cancelAnimationFrame(this.rafId);
         this.ultimoFrame = performance.now();
@@ -398,7 +473,18 @@ class Game {
 
         this.personaje.actualizar(dt, this.input);
         this.personaje.dibujar();
+        this.meteoritos.forEach((meteorito) => meteorito.actualizar(dt));
+
         this.revisarColisiones();
+        if (this.estado === "jugando") this.revisarGolpes(dt);
+
+        if (this.personaje.bocadilloVisible) {
+            const tocoTeclas = this.input.activas.size > 0 || this.input.pulsadas.size > 0;
+            if (tocoTeclas || this.tiempo > CONFIG.tiempoBocadillo) {
+                this.personaje.ocultarBocadillo();
+            }
+        }
+
         this.input.limpiarPulsaciones();
 
         this.tiempo += dt;
@@ -419,18 +505,56 @@ class Game {
             const moneda = this.monedas[i];
             if (!this.personaje.colisionaCon(moneda)) continue;
 
-            moneda.element.remove();
+            moneda.eliminar();
             this.monedas.splice(i, 1);
             this.puntuacion++;
             this.updateScore();
 
             sonidoMoneda.currentTime = 0;
             sonidoMoneda.play().catch(() => {});
+
+            // Чем меньше звёзд осталось, тем плотнее поток мусора
+            if (this.puntuacion % CONFIG.estrellasPorMeteorito === 0) this.agregarMeteorito();
         }
 
         if (this.monedas.length === 0 && this.estado === "jugando") {
             this.mostrarVentanaGanadora();
         }
+    }
+
+    revisarGolpes(dt) {
+        if (this.invulnerable > 0) {
+            this.invulnerable -= dt;
+            if (this.invulnerable <= 0) {
+                this.personaje.element.classList.remove("invulnerable");
+            }
+            return;
+        }
+
+        const impacto = this.meteoritos.find((m) => this.personaje.colisionaCon(m));
+        if (impacto) this.recibirGolpe(impacto);
+    }
+
+    recibirGolpe(meteorito) {
+        this.vidas--;
+        this.invulnerable = CONFIG.invulnerabilidad;
+        this.personaje.element.classList.add("invulnerable");
+        this.personaje.aterrizar();
+        meteorito.reaparecer(); // чтобы тот же обломок не добил сразу после неуязвимости
+        this.actualizarVidas(true);
+
+        if (this.vidas <= 0) this.mostrarVentanaPerdedora();
+    }
+
+    actualizarVidas(golpe = false) {
+        this.livesElement.innerHTML =
+            "♥".repeat(this.vidas) +
+            `<span class="perdida">${"♥".repeat(CONFIG.vidas - this.vidas)}</span>`;
+
+        if (!golpe) return;
+        this.livesElement.classList.remove("golpe");
+        void this.livesElement.offsetWidth; // перезапуск анимации
+        this.livesElement.classList.add("golpe");
     }
 
     updateScore() {
@@ -450,14 +574,27 @@ class Game {
         }
     }
 
-    mostrarVentanaGanadora() {
-        this.estado = "ganado";
+    terminarPartida(estado) {
+        this.estado = estado;
         cancelAnimationFrame(this.rafId);
-        this.celebrationSound.play().catch(() => {});
+        this.personaje.element.classList.remove("invulnerable");
+        this.overlay.style.display = 'flex';
+    }
 
+    mostrarVentanaGanadora() {
+        this.celebrationSound.play().catch(() => {});
+        this.winWindow.classList.remove("derrota");
         document.getElementById('win-message').innerText = `Congratulations, ${this.playerName}!`;
         document.getElementById('win-time').innerText = `Your time: ${Math.floor(this.tiempo)}s`;
-        this.overlay.style.display = 'flex';
+        this.terminarPartida("ganado");
+    }
+
+    mostrarVentanaPerdedora() {
+        this.winWindow.classList.add("derrota");
+        document.getElementById('win-message').innerText = `Game over, ${this.playerName}!`;
+        document.getElementById('win-time').innerText =
+            `Stars: ${this.puntuacion}/${CONFIG.totalEstrellas} · Time: ${Math.floor(this.tiempo)}s`;
+        this.terminarPartida("perdido");
     }
 }
 
